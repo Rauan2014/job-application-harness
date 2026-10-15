@@ -55,6 +55,20 @@ Armazenado em `data/profile.json` (com modelo de exemplo em `data/profile.exampl
 
 ## 2. Contrato da Planilha de Vagas (`Job`)
 
+> **Escopo de Atuação do Sistema**:
+> O **Candidata IA** atua exclusivamente como **executor autônomo de candidaturas** (automação de preenchimento, upload de currículos, resolução de questionários e envio nos ATSs).
+> 
+> ⚠️ **O sistema NÃO pesquisa vagas na internet**. A prospecção e seleção de vagas deve ser realizada externamente (por um agente de busca/scraping dedicado ou pelo próprio usuário). Esse agente externo é responsável por gerar ou alimentar a planilha central (Google Sheets ou `.xlsx`/`.csv` local) que servirá de entrada para o robô.
+
+### Requisitos Mínimos para Execução do Robô:
+1. **Link da Planilha Central (`GOOGLE_SHEET_URL`)**: Planilha acessível com as colunas contratuais abaixo.
+2. **Link / Nome do Currículo Otimizado**: O campo `Currículo Otimizado` deve apontar para o nome ou rótulo do PDF disponível em `cache/resumes/` ou no Google Drive (`DRIVE_FOLDER_ID`). O sistema realiza correspondência difusa (*fuzzy matching* via `difflib`) entre o valor da célula e os nomes dos PDFs.
+3. **Link da Vaga**: URL direta e válida da página de candidatura da vaga (ex.: Greenhouse, Lever, Indeed, etc.).
+4. **Status da Candidatura**: Para que o robô processe a linha, o valor deve ser `A Fazer` (ou em branco, se configurado `INCLUDE_BLANK_STATUS=true`).
+5. **Assets Locais**: Perfil completo em `data/profile.json` e chave `LLM_API_KEY`.
+
+### Estrutura de Colunas da Planilha
+
 A fonte de dados de vagas (Google Sheets ou `.xlsx`/`.csv` local) deve conter as seguintes colunas obrigatórias:
 
 | Coluna na Planilha | Tipo no Modelo | Descrição |

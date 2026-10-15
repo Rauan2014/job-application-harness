@@ -26,6 +26,35 @@ python -m web
 
 ---
 
+## 🎯 Como Funciona o Sistema & Pré-Requisitos de Dados
+
+> **Escopo da Ferramenta**: O **Candidata IA** é um **executor de candidaturas**, projetado para automatizar o processo de preenchimento, upload de currículos, resolução de perguntas e envio nos ATSs (*Greenhouse, Lever, Indeed, Workable, RecrutaSimples, etc.*).
+> 
+> ⚠️ **O sistema NÃO pesquisa vagas na internet**. A prospecção e seleção de vagas deve ser feita previamente por você ou por um agente de busca/scraping externo, que deve popular a **Planilha Central de Vagas**.
+
+### 📋 Estrutura Necessária na Planilha (Google Sheets / Excel)
+Para que a automação rode, o agente de pesquisa ou usuário precisa fornecer uma planilha contendo as seguintes colunas essenciais:
+
+| Coluna | Obrigatória? | Exemplo | Descrição |
+| :--- | :---: | :--- | :--- |
+| **`Link da Vaga`** (ou `URL da Vaga`) | **Sim** | `https://jobs.lever.co/empresa/abc123` | URL direta para a página de candidatura da vaga. |
+| **`Currículo Otimizado`** | **Sim** | `Currículo Otimizado - Empresa X` ou `Base Inglês` | Nome do arquivo PDF ou rótulo do currículo a ser anexado. O sistema usa busca aproximada (*fuzzy matching*) na pasta de currículos. |
+| **`Status da Candidatura`** | **Sim** | `A Fazer` | Define quais vagas processar. O robô filtra por `A Fazer` (ou em branco, se `INCLUDE_BLANK_STATUS=true`). Ao terminar, atualiza para `Concluído` ou `Revisar`. |
+| **`Empresa`** | **Sim** | `Nubank`, `Sinqia` | Identificador da empresa para registro, screenshots e matching. |
+| **`Cargo`** | **Sim** | `Senior Python Engineer` | Título da vaga para contextualizar respostas da IA. |
+| **`Fit Score`** | Recomendada | `85%` ou `85` | Score de 0 a 100 de aderência técnica. Se `FIT_GATE_ENABLED=true`, vagas abaixo da nota de corte (ex: 70) são ignoradas. |
+| **`Stack Principal`** | Opcional | `Python, FastAPI, Docker` | Tecnologias exigidas, usadas para apoiar a formulação de respostas. |
+| **`Base Utilizada`** | Opcional | `Cognition / Base Português` | Indica qual versão base gerou o currículo otimizado. |
+| **`Data`** | Opcional | `15/10/2026` | Data de inclusão da vaga. |
+
+### 📦 O que mais é necessário para o robô rodar:
+1. **Link da Planilha (`GOOGLE_SHEET_URL`)**: Informado no `.env` ou colado na aba *Configurações* do painel visual. Se compartilhada como *"Qualquer pessoa com o link pode ler"*, dispensa credenciais de nuvem.
+2. **Currículos em PDF**: Arquivos `.pdf` salvos na pasta local [`cache/resumes/`](cache/resumes) ou no Google Drive (`DRIVE_FOLDER_ID`).
+3. **Perfil do Candidato (`data/profile.json`)**: Arquivo com os dados reais do candidato (contato, links de LinkedIn/GitHub, pretensão salarial e respostas de autodeclaração).
+4. **Chave de IA (`LLM_API_KEY`)**: Chave gratuita do Google AI Studio (Gemini) ou OpenAI para interpretação e preenchimento contextual.
+
+---
+
 ## 1. Requisitos e Instalação
 
 ### Pré-requisitos
