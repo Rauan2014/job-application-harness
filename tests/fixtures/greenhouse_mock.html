@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Staff Backend Engineer - Greenhouse Application Mock</title>
+    <!-- Analytics scripts that must be blocked by BrowserManager -->
+    <script src="https://www.google-analytics.com/analytics.js"></script>
+    <script src="https://www.googletagmanager.com/gtm.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        .asterisk { color: red; }
+        .field { margin-bottom: 12px; }
+        #application_confirmation { color: green; font-size: 1.2em; font-weight: bold; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1 class="app-title">Staff Backend Engineer</h1>
+        <div class="company-name">Acme Software Corp</div>
+    </div>
+
+    <div id="content">
+        <p>Join our team to build high-scale cloud backend services using Python, PostgreSQL, and event-driven architectures.</p>
+    </div>
+
+    <div id="captcha-container"></div>
+
+    <form id="application_form">
+        <h3>Submit Your Application</h3>
+
+        <div class="field">
+            <label for="first_name">First Name <span class="asterisk">*</span></label><br>
+            <input type="text" id="first_name" name="job_application[first_name]" required>
+        </div>
+
+        <div class="field">
+            <label for="last_name">Last Name <span class="asterisk">*</span></label><br>
+            <input type="text" id="last_name" name="job_application[last_name]" required>
+        </div>
+
+        <div class="field">
+            <label for="email">Email <span class="asterisk">*</span></label><br>
+            <input type="email" id="email" name="job_application[email]" required>
+        </div>
+
+        <div class="field">
+            <label for="phone">Phone</label><br>
+            <input type="tel" id="phone" name="job_application[phone]">
+        </div>
+
+        <div class="field">
+            <label for="resume_file">Resume/CV <span class="asterisk">*</span></label><br>
+            <input type="file" id="resume_file" name="job_application[resume]" required>
+        </div>
+
+        <div class="field">
+            <label for="job_application_answers_attributes_0_text_value">LinkedIn Profile</label><br>
+            <input type="text" id="job_application_answers_attributes_0_text_value" name="job_application[answers_attributes][0][text_value]">
+        </div>
+
+        <div class="field">
+            <label for="job_application_answers_attributes_1_text_value">Website / GitHub</label><br>
+            <input type="text" id="job_application_answers_attributes_1_text_value" name="job_application[answers_attributes][1][text_value]">
+        </div>
+
+        <div id="custom_fields">
+            <div class="field">
+                <label for="work_auth_gh">Are you legally authorized to work in the country? <span class="asterisk">*</span></label><br>
+                <select id="work_auth_gh" name="job_application[answers_attributes][2][text_value]" required>
+                    <option value="">Select an option</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="comp_gh">Salary Expectations</label><br>
+                <input type="text" id="comp_gh" name="job_application[answers_attributes][3][text_value]">
+            </div>
+        </div>
+
+        <div id="eeo_questions">
+            <h4>Voluntary Equal Employment Opportunity</h4>
+            <div class="field">
+                <label for="eeo_gender">Gender</label><br>
+                <select id="eeo_gender" name="job_application[eeo_gender]">
+                    <option value="">Select...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Decline">I don't wish to answer</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="eeo_race">Race / Ethnicity</label><br>
+                <select id="eeo_race" name="job_application[eeo_race]">
+                    <option value="">Select...</option>
+                    <option value="White">White</option>
+                    <option value="Black">Black or African American</option>
+                    <option value="Asian">Asian</option>
+                    <option value="Decline">I don't wish to answer</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="eeo_disability">Disability Status</label><br>
+                <select id="eeo_disability" name="job_application[eeo_disability]">
+                    <option value="">Select...</option>
+                    <option value="Yes">Yes, I have a disability</option>
+                    <option value="No">No, I do not have a disability</option>
+                    <option value="Decline">I don't wish to answer</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <input type="submit" id="submit_app" value="Submit Application">
+        </div>
+    </form>
+
+    <div id="application_confirmation" class="hidden">
+        <h2>Thank you for applying!</h2>
+        <p>Your application was submitted successfully. Confirmation #GH-98765</p>
+    </div>
+
+    <!-- Tracking image to test resource blocking -->
+    <img src="https://www.google-analytics.com/collect?v=1&tid=UA-67890" alt="tracker" style="display:none;" />
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("captcha") === "1") {
+            const container = document.getElementById("captcha-container");
+            container.innerHTML = '<div class="g-recaptcha" id="recaptcha-mock"><iframe src="https://www.google.com/recaptcha/api2/anchor" title="recaptcha"></iframe></div>';
+        }
+
+        const form = document.getElementById("application_form");
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            if (params.get("no_confirm") === "1") {
+                console.error("Submission failed on server");
+                return;
+            }
+            form.classList.add("hidden");
+            document.getElementById("application_confirmation").classList.remove("hidden");
+        });
+    </script>
+</body>
+</html>

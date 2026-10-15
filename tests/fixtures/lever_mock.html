@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Senior Python Engineer - Lever Application Mock</title>
+    <!-- Analytics scripts that must be blocked by BrowserManager -->
+    <script src="https://www.google-analytics.com/analytics.js"></script>
+    <script src="https://www.googletagmanager.com/gtm.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        .required { color: red; }
+        .application-question { margin-bottom: 15px; }
+        .application-success { color: green; font-size: 1.2em; font-weight: bold; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="posting-header">
+        <div class="posting-headline">
+            <h2>Senior Python Engineer</h2>
+        </div>
+        <div class="posting-categories">
+            <span>Engineering</span> | <span>Remote</span>
+        </div>
+    </div>
+
+    <div class="section page-centered posting-description">
+        <h3>About the Role</h3>
+        <p>We are seeking a senior python engineer with experience in distributed systems, async programming, and modern APIs.</p>
+    </div>
+
+    <div id="captcha-container"></div>
+
+    <form id="application-form">
+        <h4>Submit your application</h4>
+
+        <div class="application-question">
+            <label>Full name <span class="required">*</span></label><br>
+            <input type="text" name="name" required placeholder="Full name">
+        </div>
+
+        <div class="application-question">
+            <label>Email <span class="required">*</span></label><br>
+            <input type="email" name="email" required placeholder="Email address">
+        </div>
+
+        <div class="application-question">
+            <label>Phone</label><br>
+            <input type="tel" name="phone" placeholder="Phone number">
+        </div>
+
+        <div class="application-question">
+            <label>Current company</label><br>
+            <input type="text" name="org" placeholder="Current company">
+        </div>
+
+        <div class="application-question">
+            <label>Resume/CV <span class="required">*</span></label><br>
+            <input type="file" name="resume" id="resume-upload-input" required>
+        </div>
+
+        <h4>Links</h4>
+        <div class="application-question">
+            <label>LinkedIn URL</label><br>
+            <input type="text" name="urls[LinkedIn]" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="application-question">
+            <label>GitHub URL</label><br>
+            <input type="text" name="urls[GitHub]" placeholder="https://github.com/...">
+        </div>
+        <div class="application-question">
+            <label>Portfolio URL</label><br>
+            <input type="text" name="urls[Portfolio]" placeholder="https://...">
+        </div>
+
+        <h4>Additional Information</h4>
+        <div class="application-question">
+            <label>Additional comments</label><br>
+            <textarea name="comments" rows="4" cols="50"></textarea>
+        </div>
+
+        <div class="application-question custom-question" data-qa="custom-question">
+            <label class="application-label">Years of experience with Python? <span class="required">*</span></label><br>
+            <input type="text" name="years_python" required>
+        </div>
+
+        <div class="application-question custom-question">
+            <label class="application-label">Work authorization</label><br>
+            <select name="work_auth">
+                <option value="">Select an option</option>
+                <option value="citizen">Citizen / Permanent Resident</option>
+                <option value="visa">Requires Visa Sponsorship</option>
+            </select>
+        </div>
+
+        <div class="application-question eeo-question">
+            <label class="application-label">Gender (Voluntary)</label><br>
+            <select name="eeo_gender">
+                <option value="">Decline to self-identify</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="nonbinary">Non-Binary</option>
+                <option value="decline">Decline to self-identify</option>
+            </select>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button type="submit" id="create-application" class="template-btn-submit">Submit application</button>
+        </div>
+    </form>
+
+    <div id="success-box" class="application-success hidden">
+        Application submitted! Reference #LEV-12345
+    </div>
+
+    <!-- Tracking image to test resource blocking -->
+    <img src="https://www.google-analytics.com/collect?v=1&tid=UA-12345" alt="tracker" style="display:none;" />
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("captcha") === "1") {
+            const container = document.getElementById("captcha-container");
+            container.innerHTML = '<div class="g-recaptcha" id="recaptcha-mock" data-sitekey="mock-key"><iframe src="https://www.google.com/recaptcha/api2/anchor" title="recaptcha"></iframe></div>';
+        }
+
+        const form = document.getElementById("application-form");
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            if (params.get("no_confirm") === "1") {
+                // Simula erro ou timeout de confirmação
+                console.error("Submission failed on server");
+                return;
+            }
+            form.classList.add("hidden");
+            document.getElementById("success-box").classList.remove("hidden");
+        });
+    </script>
+</body>
+</html>

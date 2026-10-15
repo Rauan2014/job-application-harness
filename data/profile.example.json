@@ -1,0 +1,33 @@
+{
+  "full_name": "Fulana de Tal",
+  "email": "fulana.detal@example.com",
+  "phone": "+55 11 99999-9999",
+  "location": "São Paulo, SP, Brasil",
+  "headline": "Engenheira de Software Full Stack",
+  "links": {
+    "linkedin": "https://linkedin.com/in/fulanadetal",
+    "github": "https://github.com/fulanadetal"
+  },
+  "work_authorization": "Brasileira (autorizada a trabalhar no Brasil e em regime remoto)",
+  "salary_expectation": "R$ 15.000 / mês (PJ)",
+  "skills": [
+    "Python",
+    "TypeScript",
+    "FastAPI",
+    "React",
+    "PostgreSQL",
+    "Docker"
+  ],
+  "base_answers": {
+    "years_python": "5 anos",
+    "english_level": "Avançado / Fluente",
+    "remote_preference": "100% Remoto",
+    "notice_period": "Imediato"
+  },
+  "eeo": {
+    "gender": "Female",
+    "race": "Decline to self-identify",
+    "veteran": "Decline to self-identify",
+    "disability": "Decline to self-identify"
+  }
+}

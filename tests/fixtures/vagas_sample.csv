@@ -1,0 +1,10 @@
+Central de Vagas e Candidaturas - Exportação Automatizada
+
+
+,Data,Empresa,Cargo,Modalidade,Link da Vaga,Currículo Otimizado,Fit Score,Base Utilizada,Stack Principal,Status da Candidatura
+,01/10/2026,Audax Soluções,AI Developer – SaaS,Remoto / SP,https://jobs.lever.co/audax/123,Currículo Otimizado - Audax Soluções,95%,Cognition / Base Português,"Next.js 16, Supabase, RLS, Claude Code, Displays dinâmicos",A Fazer
+,01/10/2026,CI&T,"[Job-31910] AI Engineer, Brazil",100% Remoto,https://boards.greenhouse.io/cit/jobs/456,Resume Optimized - CI&T,84%,Base Inglês / Cognition,"Python, LangChain, AWS",A Fazer
+,02/10/2026,Sinqia / Evertec,Senior Python Developer,Remoto,https://jobs.lever.co/evertec/789,Currículo Otimizado - Sinqia Evertec,78%,Cognition,"Python, FastAPI, Docker",A Fazer
+,02/10/2026,WithProtégé AI,AI Agent Engineer,Remoto Internacional,Ver Vaga,Resume Optimized - WithProtege AI,90%,Base Inglês,"Python, LLMs, Agents",A Fazer
+,03/10/2026,Empresa Concluída,Data Scientist,Presencial,https://boards.greenhouse.io/other/999,Currículo Otimizado - Outra,65%,Cognition,Python,Concluído
+,04/10/2026,Empresa Quebrada,QA Engineer,Híbrido,#ERROR!,#ERROR!,#ERROR!,Base Português,Cypress,A Fazer

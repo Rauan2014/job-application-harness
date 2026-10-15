@@ -1,0 +1,3 @@
+# Sidecar Laya (opcional). Traz torch/transformers: instale num ambiente separado se preferir.
+# Uso: laya-mcp serve --model multilingual --port 8787 --concurrency 1
+laya-mcp[mcp]>=0.2.2,<0.3

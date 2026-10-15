@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "answers": {
+    "q_choice": {
+      "question_id": "q_choice",
+      "type": "choice",
+      "choice": "opt_a",
+      "probabilities": {
+        "opt_b": 0.32,
+        "opt_a": 0.68
+      },
+      "confidence": 0.62
+    }
+  },
+  "model": "multilingual",
+  "latency_ms": 38.5,
+  "truncated": null,
+  "device": "cuda",
+  "degraded": false
+}

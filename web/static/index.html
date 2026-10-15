@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Candidata // Harness Protocol — Autonomous Flight Deck</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
+  <link rel="stylesheet" href="/static/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar Superior -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-emblem-wrap">
+          <img src="/static/assets/logo.svg" alt="Candidata Emblem" />
+        </div>
+        <div class="brand-title">
+          <h1>CANDIDATA <span class="brand-badge">PROTOCOL</span></h1>
+          <p>Autonomous Career Flight Deck</p>
+        </div>
+      </div>
+
+      <nav class="nav-center" aria-label="Navegação do Flight Deck">
+        <button class="nav-tab active" data-target="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="m12 12 7-7"/>
+          </svg>
+          <span>Radar</span>
+        </button>
+        <button class="nav-tab" data-target="jobs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>Candidaturas</span>
+        </button>
+        <button class="nav-tab" data-target="config">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
+          </svg>
+          <span>Configurações</span>
+        </button>
+        <button class="nav-tab" data-target="screenshots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
+          <span>Evidências</span>
+          <span id="tab-badge-screenshots" class="brand-badge" style="display:none; font-size:0.62rem; padding:0.05rem 0.38rem;">0</span>
+        </button>
+        <button class="nav-tab" data-target="design-system">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/>
+          </svg>
+          <span>Design System</span>
+        </button>
+      </nav>
+
+      <div class="nav-actions">
+        <div id="header-status-pill" class="status-pill status-idle">
+          <span class="badge-dot"></span> PRONTO
+        </div>
+
+        <div class="nav-utils">
+          <button id="btn-toggle-sound" class="btn-icon sound-toggle-btn active" title="Alerta sonoro ao concluir ou solicitar revisão" onclick="toggleSoundAlert()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+          <button class="btn-icon" title="Ver / Ocultar Guia Rápido" onclick="toggleGuideBanner()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+          </button>
+          <button id="btn-toggle-theme" class="btn-icon" title="Alternar Modo de Contraste">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+        </div>
+
+        <button id="btn-start-automation" class="btn btn-primary" onclick="openRunModal()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          <span>Iniciar Protocolo</span>
+        </button>
+        <button id="btn-stop-automation" class="btn btn-danger" onclick="stopAutomation()" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
+          <span>Abortar Missão</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="content">
+      <!-- ===================================================================
+           ABA 1: RADAR DE OPERAÇÃO & AO VIVO
+           =================================================================== -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- Guia Rápido de 3 Passos (Onboarding Não-Técnico) -->
+        <div id="guide-banner" class="guide-banner">
+          <div class="guide-header">
+            <div class="guide-title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+              Guia Rápido de 3 Passos para Usuários Não-Técnicos
+            </div>
+            <button class="modal-close" style="font-size:1.1rem; line-height:1;" onclick="dismissGuideBanner()" title="Ocultar Guia">&times;</button>
+          </div>
+          <div class="guide-steps-grid">
+            <div class="guide-step-card" onclick="switchTab('config')" style="cursor:pointer;" title="Clique para ir às Configurações">
+              <div class="guide-step-num">1</div>
+              <div class="guide-step-text">
+                <h4>Configurar Chave & Sessão</h4>
+                <p>Valide sua chave de IA e conecte suas contas no Indeed, Gupy ou LinkedIn.</p>
+              </div>
+            </div>
+            <div class="guide-step-card" onclick="openRunModal()" style="cursor:pointer;" title="Clique para abrir opções de execução">
+              <div class="guide-step-num">2</div>
+              <div class="guide-step-text">
+                <h4>Disparar em Simulação (Dry-Run)</h4>
+                <p>Preenche formulários sem enviar de verdade para auditar respostas com segurança.</p>
+              </div>
+            </div>
+            <div class="guide-step-card" onclick="switchTab('jobs')" style="cursor:pointer;" title="Clique para ver candidaturas">
+              <div class="guide-step-num">3</div>
+              <div class="guide-step-text">
+                <h4>Acompanhar & Exportar Planilha</h4>
+                <p>Veja qual currículo foi usado, tokens consumidos e exporte relatório em CSV.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flight Deck Banner -->
+        <div class="hud-banner">
+          <div class="progress-header">
+            <div class="progress-title">
+              <span class="sonar-dot"></span>
+              <span>Telemetria de Execução:</span>
+              <span id="hud-progress-pct" class="progress-title-percent">0%</span>
+            </div>
+            <div style="display:flex; gap:1.25rem; align-items:center; flex-wrap:wrap;">
+              <div id="hud-live-timer" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--cyan); display:flex; gap:0.6rem;">
+                <span>Tempo: <strong id="hud-timer-val">00:00:00</strong></span>
+                <span id="hud-eta-val" style="color:var(--text-muted);">&bull; ETA: Aguardando</span>
+              </div>
+              <div id="hud-progress-stats" class="progress-stats">
+                0 concluídas de 0 vagas (0 restantes)
+              </div>
+            </div>
+          </div>
+
+          <div class="progress-bar-bg">
+            <div id="hud-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+
+          <!-- Onde a IA está agora (Navegadores Ativos) -->
+          <div style="margin-top: 1.15rem;">
+            <div style="font-family:var(--font-mono); font-size:0.72rem; font-weight:600; color:var(--text-muted); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.4rem;">
+              INSTÂNCIAS CAMOUFOX EM OPERAÇÃO
+            </div>
+            <div id="hud-active-jobs" class="active-jobs-list">
+              <div style="font-size:0.825rem; color:var(--text-muted); padding:0.4rem 0;">
+                Nenhum motor de navegação ativo. Clique em "Iniciar Protocolo" para carregar a fila.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade de Métricas Principais (KPIs) -->
+        <div class="kpi-grid">
+          <!-- Card 1: Currículos Enviados -->
+          <div class="kpi-card has-tooltip" data-tooltip="Total de formulários com currículo anexado. Em simulação protegida (Dry-Run), o clique final de submissão não é efetuado.">
+            <div class="kpi-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+              Currículos Enviados
+            </div>
+            <div id="kpi-resumes-sent" class="kpi-value">0 reais</div>
+            <div id="kpi-resumes-sub" class="kpi-subtext">+ 0 em simulação protegida</div>
+          </div>
+
+          <!-- Card 2: Tempo da IA -->
+          <div class="kpi-card has-tooltip" data-tooltip="Tempo médio de resposta dos navegadores e da IA para analisar e preencher cada formulário.">
+            <div class="kpi-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Latência do Motor
+            </div>
+            <div id="kpi-time-total" class="kpi-value">0s</div>
+            <div id="kpi-time-sub" class="kpi-subtext">Média: 0.0s por formulário</div>
+          </div>
+
+          <!-- Card 3: Tokens Gastos -->
+          <div class="kpi-card has-tooltip" style="color:var(--cyan);" data-tooltip="Tokens de IA consumidos no Gemini/OpenAI para responder perguntas dissertativas do formulário.">
+            <div class="kpi-label" style="color:var(--cyan);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M20 9h2"/><path d="M20 15h2"/><path d="M2 9h2"/><path d="M2 15h2"/></svg>
+              Tokens LLM Consumidos
+            </div>
+            <div id="kpi-tokens-total" class="kpi-value" style="color:var(--cyan);">0</div>
+            <div id="kpi-tokens-sub" class="kpi-subtext">0 entrada / 0 saída</div>
+          </div>
+
+          <!-- Card 4: Revisão Humana -->
+          <div class="kpi-card has-tooltip" style="color:var(--amber);" data-tooltip="Vagas pausadas quando a IA encontra CAPTCHA ou perguntas de autodeclaração sensíveis (EEO).">
+            <div class="kpi-label" style="color:var(--amber);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+              Checkpoint Humano
+            </div>
+            <div id="kpi-review-total" class="kpi-value" style="color:var(--amber);">0 vagas</div>
+            <div id="kpi-review-sub" class="kpi-subtext">Pausadas para verificação ética</div>
+          </div>
+
+          <!-- Card 5: Falhas e Erros -->
+          <div class="kpi-card has-tooltip" style="color:var(--crimson);" data-tooltip="Formulários com timeout, link quebrado ou rejeitados pelo filtro prévio de palavras-chave.">
+            <div class="kpi-label" style="color:var(--crimson);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+              Falhas Transitórias
+            </div>
+            <div id="kpi-failed-total" class="kpi-value" style="color:var(--crimson);">0 erros</div>
+            <div id="kpi-failed-sub" class="kpi-subtext">0 vagas descartadas no filtro</div>
+          </div>
+        </div>
+
+        <!-- Terminal de Logs Tático -->
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap; gap:0.75rem;">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+              Console de Operações em Tempo Real
+            </div>
+            <div class="console-toolbar">
+              <button class="console-tool-btn" onclick="copyConsoleLogs()" title="Copiar logs para área de transferência">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                Copiar
+              </button>
+              <button class="console-tool-btn" onclick="clearConsoleLogs()" title="Limpar histórico visível do console">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                Limpar
+              </button>
+              <button id="btn-toggle-autoscroll" class="console-tool-btn active" onclick="toggleAutoScroll()" title="Pausar ou retomar a rolagem automática">
+                Auto-Scroll
+              </button>
+              <button id="btn-toggle-log-filter" class="console-tool-btn" onclick="toggleLogSeverityFilter()" title="Filtrar apenas avisos e erros">
+                Avisos & Erros
+              </button>
+            </div>
+          </div>
+          <div id="terminal-logs" class="terminal-card"></div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ABA 2: CANDIDATURAS & HISTÓRICO
+           =================================================================== -->
+      <section id="tab-jobs" class="tab-pane">
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+                Histórico Consolidado de Candidaturas
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted);">
+                Auditoria completa de currículos anexados, tokens utilizados e tempo de preenchimento.
+              </p>
+            </div>
+
+            <!-- Filtros e Busca -->
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
+              <div class="search-input-wrap">
+                <input
+                  id="input-search-jobs"
+                  type="text"
+                  class="form-control"
+                  placeholder="Filtrar por empresa, cargo, currículo... (/)"
+                  style="width: 250px;"
+                  oninput="handleSearch(this.value)"
+                />
+                <button id="btn-clear-search" class="search-clear-btn" onclick="clearSearch()" title="Limpar busca">&times;</button>
+              </div>
+
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button class="btn btn-secondary filter-pill active" data-status="all" onclick="setFilterStatus('all')">
+                  Todas <span id="count-filter-all" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="PENDING" onclick="setFilterStatus('PENDING')">
+                  Na Fila <span id="count-filter-pending" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="COMPLETED" onclick="setFilterStatus('COMPLETED')">
+                  Concluídas <span id="count-filter-completed" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="NEEDS_REVIEW" onclick="setFilterStatus('NEEDS_REVIEW')">
+                  Revisão <span id="count-filter-review" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="FAILED" onclick="setFilterStatus('FAILED')">
+                  Erros <span id="count-filter-failed" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="SKIPPED" onclick="setFilterStatus('SKIPPED')">
+                  Descartadas <span id="count-filter-skipped" class="filter-count">0</span>
+                </button>
+              </div>
+
+              <button class="btn btn-secondary" onclick="exportResultsCSV()" title="Exportar dados visíveis para Excel / CSV">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Exportar CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabela de Candidaturas -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sortable" onclick="sortTable('company')">
+                    Empresa & Cargo <span id="sort-company" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('status')">
+                    Status <span id="sort-status" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('resume_used')">
+                    Currículo Enviado <span id="sort-resume_used" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('duration_s')">
+                    Duração <span id="sort-duration_s" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('tokens_used')">
+                    Tokens <span id="sort-tokens_used" class="sort-icon">↕</span>
+                  </th>
+                  <th>Diagnóstico do Pipeline</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="results-table-body">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                    Carregando registros do arquivo results.jsonl...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ABA 3: CONFIGURAÇÕES & CREDENCIAIS
+           =================================================================== -->
+      <section id="tab-config" class="tab-pane">
+        <form onsubmit="saveSettings(event)">
+          <div class="form-row">
+            <!-- Coluna 1: Chaves de API & IA -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+                  Chaves de API & Motor LLM
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Chave Secreta da API (Gemini ou OpenAI)</label>
+                <div class="input-with-action">
+                  <input
+                    id="cfg-api-key"
+                    type="password"
+                    class="form-control"
+                    placeholder="Cole sua chave (ex: AQ.Ab8... ou sk-...)"
+                  />
+                  <button type="button" class="btn btn-secondary" onclick="togglePasswordVisibility('cfg-api-key')" title="Revelar segredo">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button id="btn-test-key" type="button" class="btn btn-secondary" onclick="testApiKey()">
+                    Testar Conexão
+                  </button>
+                </div>
+                <div id="test-key-result" style="display:none; font-family:var(--font-mono); font-size:0.75rem; margin-top:0.4rem;"></div>
+                <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.35rem;">
+                  Chave gratuita no Google AI Studio: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--mint); text-decoration:none;">aistudio.google.com</a>
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Presets Rápidos de Modelos</label>
+                <select id="cfg-model-preset" class="form-control" onchange="applyModelPreset(this.value)">
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recomendado — Gratuito, Rápido e Preciso)</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Maior Raciocínio Ético)</option>
+                  <option value="gpt-4o-mini">OpenAI GPT-4o-mini (Econômico)</option>
+                  <option value="gpt-4o">OpenAI GPT-4o (Completo)</option>
+                  <option value="custom">Outro / Modelo Personalizado</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Modelo de Linguagem (LLM)</label>
+                <input id="cfg-model" type="text" class="form-control" placeholder="gemini-2.5-flash" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">URL Base da API OpenAI-compatível</label>
+                <input id="cfg-base-url" type="text" class="form-control" placeholder="https://generativelanguage.googleapis.com/v1beta/openai/" oninput="markConfigDirty()" />
+              </div>
+            </div>
+
+            <!-- Coluna 2: Cookies & Sessão de Contas -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 8h.01"/><path d="M12 12h.01"/><path d="M16 8h.01"/><path d="M12 16h.01"/></svg>
+                  Sessão Camoufox & Cookies de Contas
+                </div>
+                <div id="cookies-status-badge" class="badge badge-neutral">Sincronizando...</div>
+              </div>
+
+              <p id="cookies-details-text" style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.85rem;">
+                Cookies mantêm suas credenciais do Indeed, Gupy e LinkedIn ativas para suprimir desafios Cloudflare Turnstile.
+              </p>
+
+              <div id="cookies-portals-list" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.15rem;"></div>
+
+              <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <button type="button" class="btn btn-secondary" style="justify-content:flex-start;" onclick="triggerVisualLogin()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  <strong>Abrir Navegador para Login</strong> (1-Clique Visual)
+                </button>
+                <button type="button" class="btn btn-secondary" style="justify-content:flex-start;" onclick="openPasteCookiesModal()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+                  <strong>Importar Cookies JSON</strong> (Extensões)
+                </button>
+                <button type="button" class="btn btn-danger" style="justify-content:flex-start;" onclick="clearSavedCookies()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  <strong>Limpar Sessão Salva</strong>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <!-- Coluna 3: Planilha & Currículos -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                  Fontes de Dados (Planilha & Drive)
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Link Central (Google Sheets)</label>
+                <div class="input-with-action">
+                  <input
+                    id="cfg-sheet-url"
+                    type="text"
+                    class="form-control"
+                    placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                    oninput="markConfigDirty()"
+                  />
+                  <button type="button" class="btn btn-secondary" onclick="openCurrentSheet()" title="Abrir planilha no Google Sheets">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Diretório Local de Currículos</label>
+                <input id="cfg-cache-dir" type="text" class="form-control" placeholder="./cache/resumes" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">ID da Pasta Google Drive (Opcional)</label>
+                <input id="cfg-drive-folder" type="text" class="form-control" placeholder="Hash no final da URL da pasta do Drive" />
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-blank-status" type="checkbox" />
+                  <span>Tratar registros vazios na planilha como "A Fazer"</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Coluna 4: Regras de Execução -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                  Diretrizes de Execução & Segurança
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Navegadores Simultâneos (Concorrência)</label>
+                <input id="cfg-concurrency" type="number" min="1" max="10" class="form-control" />
+                <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">
+                  Recomendado para estabilidade: 2 a 3 instâncias.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-dry-run" type="checkbox" />
+                  <span><strong>Modo Simulação (Dry-Run):</strong> Preenche sem clicar em submeter (Protegido)</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-autonomous" type="checkbox" />
+                  <span><strong>Modo Autônomo:</strong> Resolve campos triviais sem interromper o usuário</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-camoufox" type="checkbox" />
+                  <span><strong>Motor Camoufox (C++ Gecko):</strong> Emulação biométrica anti-bot ativa</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botão Salvar Geral -->
+          <div style="margin-top: 1.35rem; display:flex; justify-content:flex-end; align-items:center;">
+            <div id="unsaved-badge" style="display:none; font-size:0.75rem; margin-right:0.85rem; color:var(--amber); align-items:center;">
+              <span class="unsaved-dot"></span> Alterações não gravadas no .env
+            </div>
+            <button id="btn-save-settings" type="submit" class="btn btn-primary" style="padding:0.65rem 2rem; font-size:0.875rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Gravar Configurações no Arquivo .env
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===================================================================
+           ABA 4: EVIDÊNCIAS & CAPTURAS DE TELA
+           =================================================================== -->
+      <section id="tab-screenshots" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                Galeria de Capturas de Tela (Evidências Visuais)
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted);">
+                Telas registradas no instante exato de paradas por CAPTCHA, formulário ou dúvida do robô.
+              </p>
+            </div>
+          </div>
+
+          <div id="gallery-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1.15rem;">
+            <!-- Renderizado dinamicamente -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ABA 5: DESIGN SYSTEM & BRAND TOKENS
+           =================================================================== -->
+      <section id="tab-design-system" class="tab-pane">
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+                Identidade Visual Oficial: Studio Edition (Quantum Stealth)
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted);">
+                Diretrizes canônicas de cores, tipografia, tokens e assets gráficos do ecossistema Candidata IA.
+              </p>
+            </div>
+          </div>
+
+          <!-- Banner de Apresentação da Marca -->
+          <div style="display:flex; gap:2rem; align-items:center; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:1.5rem;">
+            <div style="width:110px; height:110px; border-radius:var(--radius-md); border:1px solid rgba(0,242,157,0.3); background:#06080b; padding:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 24px var(--mint-glow);">
+              <img src="/static/assets/logo.svg" alt="Emblem" style="width:100%; height:100%;" />
+            </div>
+            <div>
+              <div style="display:flex; align-items:center; gap:0.6rem;">
+                <h2 style="font-size:1.4rem; font-weight:800; letter-spacing:-0.03em;">CANDIDATA // PROTOCOL</h2>
+                <span class="badge badge-success">v1.0.0 STUDIO</span>
+              </div>
+              <p style="font-size:0.85rem; color:var(--text-secondary); max-width:650px; margin-top:0.4rem;">
+                A estética foi construída em torno da precisão tática e elegância funcional. Afastando-se de clichês genéricos de IA, utiliza superfícies em grafite carbono profundo (Obsidian), realces em Menta Quântica (Quantum Mint) para velocidade e Cyan Elétrico para cognição neural.
+              </p>
+            </div>
+          </div>
+
+          <!-- Paleta de Cores e Tokens -->
+          <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.85rem;">
+              PALETA DE CORES PRIMÁRIA
+            </h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
+              <div style="background:#06080b; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#06080b; border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-xs); margin-bottom:0.6rem;"></div>
+                <div style="font-weight:600; font-size:0.85rem;">Obsidian Void</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#06080B</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Fundo mestre sem reflexo</div>
+              </div>
+
+              <div style="background:#0c1017; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#0c1017; border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-xs); margin-bottom:0.6rem;"></div>
+                <div style="font-weight:600; font-size:0.85rem;">Carbon Surface</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#0C1017</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Superfície dos cartões</div>
+              </div>
+
+              <div style="background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#00f29d; border-radius:var(--radius-xs); margin-bottom:0.6rem; box-shadow:0 0 12px var(--mint-glow);"></div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--mint);">Quantum Mint</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#00F29D</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Identidade e sucesso</div>
+              </div>
+
+              <div style="background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#38bdf8; border-radius:var(--radius-xs); margin-bottom:0.6rem; box-shadow:0 0 12px var(--cyan-glow);"></div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--cyan);">Cyber Cyan</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#38BDF8</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Tokens & Cognição LLM</div>
+              </div>
+
+              <div style="background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#f59e0b; border-radius:var(--radius-xs); margin-bottom:0.6rem; box-shadow:0 0 12px var(--amber-glow);"></div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--amber);">Solar Amber</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#F59E0B</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Revisão Humana / Atenção</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matriz de Badges & Componentes -->
+          <div>
+            <h3 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.85rem;">
+              SISTEMA DE BADGES E PÍLULAS DE STATUS
+            </h3>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+              <span class="badge badge-success"><span class="badge-dot"></span> CANDIDATURA ENVIADA</span>
+              <span class="badge badge-info"><span class="badge-dot"></span> GUPY RECONHECIDO</span>
+              <span class="badge badge-warning"><span class="badge-dot"></span> REVISÃO HUMANA (CAPTCHA)</span>
+              <span class="badge badge-danger"><span class="badge-dot"></span> FALHA DE REDE</span>
+              <span class="badge badge-neutral"><span class="badge-dot"></span> STATUS FILTRADO</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: DISPARAR AUTOMAÇÃO
+       ===================================================================== -->
+  <div id="modal-run" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          Iniciar Protocolo de Execução
+        </h3>
+        <button class="modal-close" onclick="closeRunModal()">&times;</button>
+      </div>
+
+      <p style="font-size:0.825rem; color:var(--text-secondary); margin-bottom:1.15rem;">
+        Defina os parâmetros de execução do lote sem necessidade de comandos de terminal:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Limite de vagas a processar:</label>
+        <select id="run-opt-limit" class="form-control">
+          <option value="5">Apenas 5 vagas (Amostra rápida)</option>
+          <option value="10">10 vagas</option>
+          <option value="25">25 vagas</option>
+          <option value="" selected>Todas as vagas pendentes na planilha</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-dryrun" type="checkbox" checked />
+          <span><strong>Modo Simulação (Dry-Run):</strong> Preenche o formulário mas não clica em submeter</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-retry-failed" type="checkbox" />
+          <span>Incluir vagas marcadas como "Falhou" para nova tentativa</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-retry-review" type="checkbox" />
+          <span>Incluir vagas marcadas como "Revisar"</span>
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeRunModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="executeRun()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          Disparar Missão Agora
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: SELEÇÃO DE PORTAL PARA LOGIN VISUAL
+       ===================================================================== -->
+  <div id="modal-login-choice" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Login Visual em Portais de Vagas
+        </h3>
+        <button class="modal-close" onclick="closeLoginChoiceModal()">&times;</button>
+      </div>
+      <p style="font-size:0.825rem; color:var(--text-secondary); margin-bottom:0.85rem;">
+        Selecione o portal desejado. Uma janela de navegador abrirá para você fazer login manualmente:
+      </p>
+      <div class="portal-buttons-grid">
+        <button type="button" class="portal-choice-btn" onclick="startPortalLogin('https://br.indeed.com')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          Indeed Brasil
+        </button>
+        <button type="button" class="portal-choice-btn" onclick="startPortalLogin('https://auth.gupy.io')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+          Gupy Portal
+        </button>
+        <button type="button" class="portal-choice-btn" onclick="startPortalLogin('https://www.linkedin.com/login')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8v8M12 11v5M8 11v5M8 8v.01"/></svg>
+          LinkedIn
+        </button>
+      </div>
+      <div class="form-group" style="margin-top:1rem;">
+        <label class="form-label">Ou informe uma URL personalizada:</label>
+        <div class="input-with-action">
+          <input id="input-custom-login-url" type="text" class="form-control" placeholder="https://..." value="https://br.indeed.com" />
+          <button type="button" class="btn btn-secondary" onclick="startPortalLogin(document.getElementById('input-custom-login-url').value)">
+            Abrir URL
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeLoginChoiceModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: DETALHES COMPLETOS DA VAGA (AUDITORIA)
+       ===================================================================== -->
+  <div id="modal-job-details" class="modal-overlay" onclick="closeJobDetailsModal()">
+    <div class="modal-box large" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="job-detail-title" class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          Auditoria Detalhada da Vaga
+        </h3>
+        <button class="modal-close" onclick="closeJobDetailsModal()">&times;</button>
+      </div>
+      <div id="job-detail-content"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeJobDetailsModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: COLAR COOKIES JSON
+       ===================================================================== -->
+  <div id="modal-paste-cookies" class="modal-overlay">
+    <div class="modal-box large">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+          Importação de Sessão & Cookies (JSON)
+        </h3>
+        <button class="modal-close" onclick="closePasteCookiesModal()">&times;</button>
+      </div>
+
+      <p style="font-size:0.825rem; color:var(--text-secondary); margin-bottom:0.85rem;">
+        Cole abaixo a exportação de cookies no formato Playwright (storage_state) ou gerada por extensões (EditThisCookie):
+      </p>
+
+      <textarea
+        id="txt-cookies-json"
+        class="form-control"
+        rows="10"
+        style="font-family:var(--font-mono); font-size:0.78rem;"
+        placeholder='[ { "name": "session", "value": "...", "domain": ".indeed.com" } ]'
+      ></textarea>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePasteCookiesModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitPastedCookies()">
+          Gravar Cookies no Disco
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: VISUALIZAR SCREENSHOT
+       ===================================================================== -->
+  <div id="screenshot-modal" class="modal-overlay" onclick="closeScreenshotModal()">
+    <div class="modal-box large" style="max-width:1050px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="screenshot-title" class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/></svg>
+          Evidência Capturada pelo Navegador
+        </h3>
+        <button class="modal-close" onclick="closeScreenshotModal()">&times;</button>
+      </div>
+      <div style="max-height:72vh; overflow-y:auto; text-align:center;">
+        <img id="screenshot-img" src="" alt="Screenshot" style="max-width:100%; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);" />
+      </div>
+      <div class="modal-footer">
+        <a id="btn-download-screenshot" href="#" download="evidencia.png" class="btn btn-secondary" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Baixar Imagem
+        </a>
+        <a id="btn-open-screenshot-tab" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+          Abrir em Nova Aba
+        </a>
+        <button class="btn btn-primary" onclick="closeScreenshotModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
