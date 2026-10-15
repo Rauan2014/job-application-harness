@@ -320,7 +320,7 @@ class GreenhouseHandler(BaseATSHandler):
                 lbl_loc = page.locator(f"label[for='{q_id_attr}']")
                 lbl_t = ((await lbl_loc.first.inner_text()) if await lbl_loc.count() > 0 else "").lower()
                 if "linkedin" in lbl_t:
-                    await q_el.fill(profile.links.get("linkedin", "https://linkedin.com/in/rauan-bernardo"))
+                    await q_el.fill(profile.links.get("linkedin", ""))
                 elif "pretens" in lbl_t or "salar" in lbl_t:
                     await q_el.fill(str(profile.base_answers.get("pretensão salarial") or "R$ 15.000,00"))
                 elif "acessibilidade" in lbl_t or "adapta" in lbl_t:

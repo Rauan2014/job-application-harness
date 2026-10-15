@@ -468,8 +468,8 @@ class AggregatorHandler(BaseATSHandler):
     async def _prepare_portal_specific_form(
         self,
         page: Page,
-        email: str = "rauanbernardo@gmail.com",
-        linkedin: str = "https://linkedin.com/in/rauan-bernardo",
+        email: str = "",
+        linkedin: str = "",
     ) -> bool:
         """Executa abertura/avanço específico para portais como RecrutaSimples, PrototipeAI e Inhire."""
         curr_url = (page.url or "").lower()
@@ -483,7 +483,8 @@ class AggregatorHandler(BaseATSHandler):
                     await page.wait_for_timeout(1500)
                 email_inp = page.locator("input#email")
                 if await email_inp.count() > 0 and await email_inp.first.is_visible() and await page.locator("input#cv-input").count() == 0:
-                    await email_inp.first.fill(email)
+                    if email:
+                        await email_inp.first.fill(email)
                     cont_btn = page.locator("button.actionButton:has-text('Continuar'), button:has-text('Continuar')")
                     if await cont_btn.count() > 0 and await cont_btn.first.is_visible():
                         await cont_btn.first.click()
@@ -1109,7 +1110,7 @@ class AggregatorHandler(BaseATSHandler):
         await self._prepare_portal_specific_form(
             page,
             email=profile.email,
-            linkedin=profile.links.get("linkedin", "https://linkedin.com/in/rauan-bernardo"),
+            linkedin=profile.links.get("linkedin", ""),
         )
 
         # Se o formulário ainda estiver fechado (ex: reentrada direta), clica no CTA intermediário

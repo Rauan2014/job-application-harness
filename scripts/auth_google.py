@@ -28,8 +28,27 @@ def main() -> None:
         print(f"\n Falha na autenticação: {exc}")
         sys.exit(1)
 
-    # Testa o download da planilha do usuário via Drive
-    sheet_id = "1L8fZdLj9YHMu62oFMRg77g-_BePl6UoZ16tGIYFA6TI"
+    # Tenta obter o ID da planilha via argumento ou via .env (GOOGLE_SHEET_URL)
+    sheet_id: str | None = None
+    if len(sys.argv) > 1:
+        sheet_id = sys.argv[1].strip()
+    else:
+        import os
+        from storage.sheet_loader import extract_spreadsheet_id
+        raw_url = os.getenv("GOOGLE_SHEET_URL") or ""
+        if not raw_url and Path(".env").exists():
+            for line in Path(".env").read_text(encoding="utf-8").splitlines():
+                if line.strip().startswith("GOOGLE_SHEET_URL="):
+                    raw_url = line.split("=", 1)[1].strip().strip("'\"")
+                    break
+        if raw_url:
+            sheet_id = extract_spreadsheet_id(raw_url)
+
+    if not sheet_id:
+        print("\n Nenhuma planilha informada. Para testar o download, defina GOOGLE_SHEET_URL no .env ou passe o ID como argumento:")
+        print("   python scripts/auth_google.py <SPREADSHEET_ID>")
+        return
+
     print(f"\nTestando acesso e exportação da planilha {sheet_id}...")
     try:
         dest = Path("./cache/vagas_sheets_latest.xlsx")
