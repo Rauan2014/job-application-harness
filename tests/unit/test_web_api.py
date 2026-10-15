@@ -75,7 +75,43 @@ def test_get_config_endpoint(client: TestClient):
     assert "llm" in data
     assert "sheet" in data
     assert "execution" in data
+    assert "decision" in data
+    assert "raw_env" in data
     assert "api_key_masked" in data["llm"]
+    assert "laya_url" in data["decision"]
+    assert "task_timeout_s" in data["execution"]
+
+
+def test_save_config_structured_and_raw(client: TestClient, tmp_path: Path, monkeypatch):
+    import web.config_manager as cm
+
+    fake_env = tmp_path / ".env"
+    fake_env.write_text("LLM_API_KEY=mock_key\nDRY_RUN=true\n", encoding="utf-8")
+    monkeypatch.setattr(cm, "ENV_FILE_PATH", fake_env)
+
+    # 1. Teste de salvamento estruturado cobrindo decision, timeouts e llm
+    payload = {
+        "llm": {"model": "gpt-4o-mini", "timeout_s": 45},
+        "execution": {"max_concurrency": 4, "headless": False, "task_timeout_s": 90.0},
+        "decision": {"decision_backend": "rules", "laya_yes_threshold": 0.85},
+    }
+    res = client.post("/api/config", json=payload)
+    assert res.status_code == 200
+    updated = res.json()
+    assert updated["llm"]["model"] == "gpt-4o-mini"
+    assert updated["execution"]["max_concurrency"] == 4
+    assert updated["execution"]["headless"] is False
+    assert updated["execution"]["task_timeout_s"] == 90.0
+    assert updated["decision"]["decision_backend"] == "rules"
+    assert updated["decision"]["laya_yes_threshold"] == 0.85
+
+    # 2. Teste de salvamento via raw_env direto
+    raw_payload = {"raw_env": "LLM_API_KEY=another_key\nCUSTOM_VAR=hello_world\nDRY_RUN=false\n"}
+    res_raw = client.post("/api/config", json=raw_payload)
+    assert res_raw.status_code == 200
+    raw_updated = res_raw.json()
+    assert raw_updated["execution"]["dry_run"] is False
+    assert "CUSTOM_VAR=hello_world" in raw_updated["raw_env"]
 
 
 def test_cookies_workflow(client: TestClient, tmp_path: Path, monkeypatch):

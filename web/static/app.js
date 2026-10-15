@@ -1015,22 +1015,76 @@ function populateConfigForm() {
   const c = state.config;
   if (!c) return;
 
-  setValue('cfg-api-key', c.llm.api_key || '');
-  setValue('cfg-base-url', c.llm.base_url || '');
-  setValue('cfg-model', c.llm.model || 'gemini-2.5-flash');
-  setValue('cfg-sheet-url', c.sheet.google_sheet_url || '');
-  setValue('cfg-drive-folder', c.sheet.drive_folder_id || '');
-  setValue('cfg-cache-dir', c.sheet.cache_dir || './cache/resumes');
-  setValue('cfg-concurrency', c.execution.max_concurrency || 3);
+  // 1. LLM
+  setValue('cfg-api-key', c.llm?.api_key || '');
+  setValue('cfg-base-url', c.llm?.base_url || '');
+  setValue('cfg-model', c.llm?.model || 'gemini-2.5-flash');
+  setValue('cfg-llm-timeout', c.llm?.timeout_s ?? 60);
+  setValue('cfg-llm-retries', c.llm?.max_retries ?? 3);
+  setValue('cfg-llm-max-input', c.llm?.max_input_chars ?? 12000);
+  setCheck('cfg-no-llm', c.llm?.no_llm);
 
-  setCheck('cfg-dry-run', c.execution.dry_run);
-  setCheck('cfg-autonomous', c.execution.autonomous_mode);
-  setCheck('cfg-camoufox', c.execution.use_camoufox);
-  setCheck('cfg-blank-status', c.sheet.include_blank_status);
+  // 2. Planilha & Drive
+  setValue('cfg-sheet-url', c.sheet?.google_sheet_url || '');
+  setValue('cfg-drive-folder', c.sheet?.drive_folder_id || '');
+  setValue('cfg-cache-dir', c.sheet?.cache_dir || './cache/resumes');
+  setValue('cfg-google-oauth-file', c.sheet?.google_oauth_client_file || './client_secret.json');
+  setValue('cfg-google-sa-file', c.sheet?.google_service_account_file || './service_account.json');
+  setValue('cfg-google-token-file', c.sheet?.google_token_file || './token.json');
+  setCheck('cfg-blank-status', c.sheet?.include_blank_status);
+
+  // 3. Execução, Concorrência & Navegador
+  setValue('cfg-concurrency', c.execution?.max_concurrency ?? 3);
+  setCheck('cfg-dry-run', c.execution?.dry_run);
+  setCheck('cfg-autonomous', c.execution?.autonomous_mode);
+  setCheck('cfg-camoufox', c.execution?.use_camoufox);
+  setCheck('cfg-headless', c.execution?.headless);
+  setValue('cfg-storage-state-path', c.execution?.storage_state_path || './cache/storage_state.json');
+  setValue('cfg-screenshot-dir', c.execution?.screenshot_dir || './artifacts/screenshots');
+  setValue('cfg-results-file', c.execution?.results_file || './artifacts/results.jsonl');
+  setValue('cfg-sheet-result-file', c.execution?.sheet_result_file || './artifacts/planilha_atualizada.xlsx');
+
+  // 4. Timeouts & Rede
+  setValue('cfg-task-timeout', c.execution?.task_timeout_s ?? 120);
+  setValue('cfg-nav-timeout', c.execution?.nav_timeout_ms ?? 30000);
+  setValue('cfg-action-timeout', c.execution?.action_timeout_ms ?? 10000);
+  setValue('cfg-max-retries', c.execution?.max_retries ?? 2);
+  setValue('cfg-backoff-base', c.execution?.backoff_base_s ?? 1.0);
+  setValue('cfg-blocked-patterns', typeof c.execution?.blocked_url_patterns === 'string' ? c.execution.blocked_url_patterns : JSON.stringify(c.execution?.blocked_url_patterns || []));
+
+  // 5. Fit Gate & Currículo
+  setValue('cfg-min-fit-score', c.execution?.min_fit_score ?? 70);
+  setCheck('cfg-fit-gate-enabled', c.execution?.fit_gate_enabled);
+  setValue('cfg-resume-match-threshold', c.execution?.resume_match_threshold ?? 0.9);
+
+  // 6. Decisão Calibrada (Laya & Regras)
+  setValue('cfg-decision-backend', c.decision?.decision_backend || 'laya');
+  setValue('cfg-laya-url', c.decision?.laya_url || 'http://127.0.0.1:8787');
+  setValue('cfg-laya-timeout', c.decision?.laya_timeout_s ?? 5.0);
+  setValue('cfg-laya-cpu-factor', c.decision?.laya_cpu_timeout_factor ?? 5.0);
+  setValue('cfg-laya-max-failures', c.decision?.laya_max_failures ?? 3);
+  setValue('cfg-laya-cooldown', c.decision?.laya_breaker_cooldown_s ?? 60.0);
+  setValue('cfg-laya-yes-th', c.decision?.laya_yes_threshold ?? 0.8);
+  setValue('cfg-laya-no-th', c.decision?.laya_no_threshold ?? 0.2);
+  setValue('cfg-laya-min-margin', c.decision?.laya_min_margin ?? 0.15);
+  setCheck('cfg-laya-order-swap', c.decision?.laya_order_swap);
+  setValue('cfg-laya-max-chars', c.decision?.laya_state_max_chars ?? 1500);
+  setValue('cfg-laya-plan-above', c.decision?.laya_plan_above_chars ?? 600);
+  setValue('cfg-laya-dp-modes', typeof c.decision?.laya_dp_modes === 'string' ? c.decision.laya_dp_modes : JSON.stringify(c.decision?.laya_dp_modes || {}));
+  setCheck('cfg-laya-req-eval', c.decision?.laya_require_eval_for_active);
+  setValue('cfg-laya-eval-file', c.decision?.laya_eval_file || './artifacts/laya_eval.json');
+  setValue('cfg-laya-eval-max-days', c.decision?.laya_eval_max_age_days ?? 14);
+  setValue('cfg-eval-min-examples', c.decision?.eval_min_examples ?? 30);
+  setValue('cfg-eval-margin', c.decision?.eval_margin ?? 0.10);
+  setValue('cfg-eval-min-coverage', c.decision?.eval_min_coverage ?? 0.5);
+  setValue('cfg-decision-audit-file', c.decision?.decision_audit_file || './artifacts/decisions.jsonl');
+
+  // 7. Editor Direto .env
+  setValue('cfg-raw-env', c.raw_env || '');
 
   // Sincroniza preset do modelo
   const presetSel = document.getElementById('cfg-model-preset');
-  if (presetSel && c.llm.model) {
+  if (presetSel && c.llm?.model) {
     if (['gemini-2.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'].includes(c.llm.model)) {
       presetSel.value = c.llm.model;
     } else {
@@ -1100,11 +1154,18 @@ async function saveSettings(e) {
       api_key: document.getElementById('cfg-api-key')?.value,
       base_url: document.getElementById('cfg-base-url')?.value,
       model: document.getElementById('cfg-model')?.value,
+      timeout_s: parseFloat(document.getElementById('cfg-llm-timeout')?.value || '60'),
+      max_retries: parseInt(document.getElementById('cfg-llm-retries')?.value || '3', 10),
+      max_input_chars: parseInt(document.getElementById('cfg-llm-max-input')?.value || '12000', 10),
+      no_llm: document.getElementById('cfg-no-llm')?.checked,
     },
     sheet: {
       google_sheet_url: document.getElementById('cfg-sheet-url')?.value,
       drive_folder_id: document.getElementById('cfg-drive-folder')?.value,
       cache_dir: document.getElementById('cfg-cache-dir')?.value,
+      google_oauth_client_file: document.getElementById('cfg-google-oauth-file')?.value,
+      google_service_account_file: document.getElementById('cfg-google-sa-file')?.value,
+      google_token_file: document.getElementById('cfg-google-token-file')?.value,
       include_blank_status: document.getElementById('cfg-blank-status')?.checked,
     },
     execution: {
@@ -1112,6 +1173,42 @@ async function saveSettings(e) {
       autonomous_mode: document.getElementById('cfg-autonomous')?.checked,
       max_concurrency: parseInt(document.getElementById('cfg-concurrency')?.value || '3', 10),
       use_camoufox: document.getElementById('cfg-camoufox')?.checked,
+      headless: document.getElementById('cfg-headless')?.checked,
+      min_fit_score: parseInt(document.getElementById('cfg-min-fit-score')?.value || '70', 10),
+      fit_gate_enabled: document.getElementById('cfg-fit-gate-enabled')?.checked,
+      resume_match_threshold: parseFloat(document.getElementById('cfg-resume-match-threshold')?.value || '0.9'),
+      task_timeout_s: parseFloat(document.getElementById('cfg-task-timeout')?.value || '120'),
+      nav_timeout_ms: parseInt(document.getElementById('cfg-nav-timeout')?.value || '30000', 10),
+      action_timeout_ms: parseInt(document.getElementById('cfg-action-timeout')?.value || '10000', 10),
+      max_retries: parseInt(document.getElementById('cfg-max-retries')?.value || '2', 10),
+      backoff_base_s: parseFloat(document.getElementById('cfg-backoff-base')?.value || '1.0'),
+      blocked_url_patterns: document.getElementById('cfg-blocked-patterns')?.value,
+      storage_state_path: document.getElementById('cfg-storage-state-path')?.value,
+      screenshot_dir: document.getElementById('cfg-screenshot-dir')?.value,
+      results_file: document.getElementById('cfg-results-file')?.value,
+      sheet_result_file: document.getElementById('cfg-sheet-result-file')?.value,
+    },
+    decision: {
+      decision_backend: document.getElementById('cfg-decision-backend')?.value,
+      laya_url: document.getElementById('cfg-laya-url')?.value,
+      laya_timeout_s: parseFloat(document.getElementById('cfg-laya-timeout')?.value || '5.0'),
+      laya_cpu_timeout_factor: parseFloat(document.getElementById('cfg-laya-cpu-factor')?.value || '5.0'),
+      laya_max_failures: parseInt(document.getElementById('cfg-laya-max-failures')?.value || '3', 10),
+      laya_breaker_cooldown_s: parseFloat(document.getElementById('cfg-laya-cooldown')?.value || '60.0'),
+      laya_yes_threshold: parseFloat(document.getElementById('cfg-laya-yes-th')?.value || '0.8'),
+      laya_no_threshold: parseFloat(document.getElementById('cfg-laya-no-th')?.value || '0.2'),
+      laya_min_margin: parseFloat(document.getElementById('cfg-laya-min-margin')?.value || '0.15'),
+      laya_order_swap: document.getElementById('cfg-laya-order-swap')?.checked,
+      laya_state_max_chars: parseInt(document.getElementById('cfg-laya-max-chars')?.value || '1500', 10),
+      laya_plan_above_chars: parseInt(document.getElementById('cfg-laya-plan-above')?.value || '600', 10),
+      laya_dp_modes: document.getElementById('cfg-laya-dp-modes')?.value,
+      laya_require_eval_for_active: document.getElementById('cfg-laya-req-eval')?.checked,
+      laya_eval_file: document.getElementById('cfg-laya-eval-file')?.value,
+      laya_eval_max_age_days: parseInt(document.getElementById('cfg-laya-eval-max-days')?.value || '14', 10),
+      eval_min_examples: parseInt(document.getElementById('cfg-eval-min-examples')?.value || '30', 10),
+      eval_margin: parseFloat(document.getElementById('cfg-eval-margin')?.value || '0.10'),
+      eval_min_coverage: parseFloat(document.getElementById('cfg-eval-min-coverage')?.value || '0.5'),
+      decision_audit_file: document.getElementById('cfg-decision-audit-file')?.value,
     },
   };
 
@@ -1133,6 +1230,30 @@ async function saveSettings(e) {
     showToast(`Erro na requisição: ${err.message}`, 'danger');
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+async function saveRawEnvDirect() {
+  const textarea = document.getElementById('cfg-raw-env');
+  if (!textarea) return;
+
+  const raw = textarea.value;
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw_env: raw }),
+    });
+    if (res.ok) {
+      state.config = await res.json();
+      populateConfigForm();
+      await Promise.all([fetchJobs(), fetchResults(), fetchMetrics()]);
+      showToast('Arquivo .env salvo com sucesso diretamente!', 'success');
+    } else {
+      showToast('Erro ao salvar arquivo .env.', 'danger');
+    }
+  } catch (err) {
+    showToast(`Erro na requisição: ${err.message}`, 'danger');
   }
 }
 

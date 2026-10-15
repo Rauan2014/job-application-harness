@@ -342,8 +342,9 @@
            =================================================================== -->
       <section id="tab-config" class="tab-pane">
         <form onsubmit="saveSettings(event)">
+          <!-- Linha 1: LLM e Sessão -->
           <div class="form-row">
-            <!-- Coluna 1: Chaves de API & IA -->
+            <!-- Card 1: Chaves de API & Motor LLM -->
             <div class="card">
               <div class="card-header">
                 <div class="card-title">
@@ -359,7 +360,8 @@
                     id="cfg-api-key"
                     type="password"
                     class="form-control"
-                    placeholder="Cole sua chave (ex: AQ.Ab8... ou sk-...)"
+                    placeholder="Cole sua chave (ex: AIza... ou sk-...)"
+                    oninput="markConfigDirty()"
                   />
                   <button type="button" class="btn btn-secondary" onclick="togglePasswordVisibility('cfg-api-key')" title="Revelar segredo">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -386,17 +388,39 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label">Modelo de Linguagem (LLM)</label>
+                <label class="form-label">Modelo de Linguagem (LLM_MODEL)</label>
                 <input id="cfg-model" type="text" class="form-control" placeholder="gemini-2.5-flash" oninput="markConfigDirty()" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">URL Base da API OpenAI-compatível</label>
+                <label class="form-label">URL Base da API (LLM_BASE_URL)</label>
                 <input id="cfg-base-url" type="text" class="form-control" placeholder="https://generativelanguage.googleapis.com/v1beta/openai/" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Timeout (s)</label>
+                  <input id="cfg-llm-timeout" type="number" min="5" max="300" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Retries</label>
+                  <input id="cfg-llm-retries" type="number" min="1" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Max Chars</label>
+                  <input id="cfg-llm-max-input" type="number" min="1000" max="100000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top:0.4rem;">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-no-llm" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Desativar LLM (NO_LLM):</strong> Operar somente com Heurísticas e Laya</span>
+                </label>
               </div>
             </div>
 
-            <!-- Coluna 2: Cookies & Sessão de Contas -->
+            <!-- Card 2: Cookies & Sessão de Contas -->
             <div class="card">
               <div class="card-header">
                 <div class="card-title">
@@ -429,8 +453,9 @@
             </div>
           </div>
 
+          <!-- Linha 2: Planilha e Diretrizes de Execução -->
           <div class="form-row" style="margin-top: 1.15rem;">
-            <!-- Coluna 3: Planilha & Currículos -->
+            <!-- Card 3: Planilha & Google Drive -->
             <div class="card">
               <div class="card-header">
                 <div class="card-title">
@@ -440,7 +465,7 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label">Link Central (Google Sheets)</label>
+                <label class="form-label">Link Central (GOOGLE_SHEET_URL)</label>
                 <div class="input-with-action">
                   <input
                     id="cfg-sheet-url"
@@ -456,35 +481,51 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label">Diretório Local de Currículos</label>
-                <input id="cfg-cache-dir" type="text" class="form-control" placeholder="./cache/resumes" />
+                <label class="form-label">ID da Pasta Google Drive (DRIVE_FOLDER_ID)</label>
+                <input id="cfg-drive-folder" type="text" class="form-control" placeholder="Hash no final da URL da pasta do Drive" oninput="markConfigDirty()" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">ID da Pasta Google Drive (Opcional)</label>
-                <input id="cfg-drive-folder" type="text" class="form-control" placeholder="Hash no final da URL da pasta do Drive" />
+                <label class="form-label">Diretório Local de Currículos (CACHE_DIR)</label>
+                <input id="cfg-cache-dir" type="text" class="form-control" placeholder="./cache/resumes" oninput="markConfigDirty()" />
               </div>
 
-              <div class="form-group">
-                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
-                  <input id="cfg-blank-status" type="checkbox" />
-                  <span>Tratar registros vazios na planilha como "A Fazer"</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Coluna 4: Regras de Execução -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
-                  Diretrizes de Execução & Segurança
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">OAuth Client File</label>
+                  <input id="cfg-google-oauth-file" type="text" class="form-control" placeholder="./client_secret.json" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Service Account File</label>
+                  <input id="cfg-google-sa-file" type="text" class="form-control" placeholder="./service_account.json" oninput="markConfigDirty()" />
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Navegadores Simultâneos (Concorrência)</label>
-                <input id="cfg-concurrency" type="number" min="1" max="10" class="form-control" />
+                <label class="form-label">Google Token File</label>
+                <input id="cfg-google-token-file" type="text" class="form-control" placeholder="./token.json" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-blank-status" type="checkbox" onchange="markConfigDirty()" />
+                  <span>Tratar registros vazios na planilha como "A Fazer" (INCLUDE_BLANK_STATUS)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Card 4: Execução, Concorrência & Navegador -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                  Diretrizes de Execução & Navegador
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Navegadores Simultâneos (MAX_CONCURRENCY)</label>
+                <input id="cfg-concurrency" type="number" min="1" max="10" class="form-control" oninput="markConfigDirty()" />
                 <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">
                   Recomendado para estabilidade: 2 a 3 instâncias.
                 </p>
@@ -492,35 +533,284 @@
 
               <div class="form-group">
                 <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
-                  <input id="cfg-dry-run" type="checkbox" />
-                  <span><strong>Modo Simulação (Dry-Run):</strong> Preenche sem clicar em submeter (Protegido)</span>
+                  <input id="cfg-dry-run" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Modo Simulação (DRY_RUN):</strong> Preenche sem clicar em submeter (Protegido)</span>
                 </label>
               </div>
 
               <div class="form-group">
                 <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
-                  <input id="cfg-autonomous" type="checkbox" />
-                  <span><strong>Modo Autônomo:</strong> Resolve campos triviais sem interromper o usuário</span>
+                  <input id="cfg-autonomous" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Modo Autônomo (AUTONOMOUS_MODE):</strong> Resolve campos sem aguardar revisão</span>
                 </label>
               </div>
 
               <div class="form-group">
                 <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
-                  <input id="cfg-camoufox" type="checkbox" />
-                  <span><strong>Motor Camoufox (C++ Gecko):</strong> Emulação biométrica anti-bot ativa</span>
+                  <input id="cfg-camoufox" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Motor Camoufox (USE_CAMOUFOX):</strong> Emulação biométrica anti-bot</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-headless" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Modo Headless (HEADLESS):</strong> Ocultar janelas do navegador</span>
+                </label>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Storage State</label>
+                  <input id="cfg-storage-state-path" type="text" class="form-control" placeholder="./cache/storage_state.json" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Pasta Screenshots</label>
+                  <input id="cfg-screenshot-dir" type="text" class="form-control" placeholder="./artifacts/screenshots" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Arquivo Resultados</label>
+                  <input id="cfg-results-file" type="text" class="form-control" placeholder="./artifacts/results.jsonl" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Planilha Saída</label>
+                  <input id="cfg-sheet-result-file" type="text" class="form-control" placeholder="./artifacts/planilha_atualizada.xlsx" oninput="markConfigDirty()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha 3: Timeouts & Fit Gate -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <!-- Card 5: Timeouts, Retentativas & Rede -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Timeouts, Retentativas & Rede
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Timeout Tarefa (s)</label>
+                  <input id="cfg-task-timeout" type="number" min="10" max="600" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nav Timeout (ms)</label>
+                  <input id="cfg-nav-timeout" type="number" min="1000" max="120000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ação Timeout (ms)</label>
+                  <input id="cfg-action-timeout" type="number" min="500" max="60000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Máx Retentativas (MAX_RETRIES)</label>
+                  <input id="cfg-max-retries" type="number" min="0" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Backoff Base (s)</label>
+                  <input id="cfg-backoff-base" type="number" step="0.1" min="0.1" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Padrões de URLs Bloqueadas (BLOCKED_URL_PATTERNS JSON)</label>
+                <input id="cfg-blocked-patterns" type="text" class="form-control" style="font-family:var(--font-mono); font-size:0.75rem;" placeholder='["*google-analytics.com*", "*hotjar.com*"]' oninput="markConfigDirty()" />
+              </div>
+            </div>
+
+            <!-- Card 6: Fit Gate & Critérios de Currículo -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+                  Fit Gate & Seleção de Currículo
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Score Mínimo de Fit (MIN_FIT_SCORE de 0 a 100)</label>
+                <input id="cfg-min-fit-score" type="number" min="0" max="100" class="form-control" oninput="markConfigDirty()" />
+                <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">
+                  Vagas com Fit Score inferior serão ignoradas ou marcadas como REVISAR.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-fit-gate-enabled" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Ativar Fit Gate (FIT_GATE_ENABLED):</strong> Aplicar corte rigoroso por score</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Limiar de Correspondência de Currículo (RESUME_MATCH_THRESHOLD)</label>
+                <input id="cfg-resume-match-threshold" type="number" step="0.05" min="0.1" max="1.0" class="form-control" oninput="markConfigDirty()" />
+                <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">
+                  Similaridade difflib mínima para vincular currículo otimizado (ex: 0.90 = 90%).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha 4: Motor de Decisão Calibrada (Laya) -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <div class="card" style="grid-column: 1 / -1;">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Motor de Decisão Calibrada (Laya Sidecar & Regras Determinísticas)
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Backend de Decisão</label>
+                  <select id="cfg-decision-backend" class="form-control" onchange="markConfigDirty()">
+                    <option value="laya">Laya Sidecar (Probabilístico Calibrado)</option>
+                    <option value="rules">Rules (Regras Determinísticas Heurísticas)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">URL do Laya (LAYA_URL)</label>
+                  <input id="cfg-laya-url" type="text" class="form-control" placeholder="http://127.0.0.1:8787" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Timeout Laya (s)</label>
+                  <input id="cfg-laya-timeout" type="number" step="0.5" min="0.5" max="60" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fator CPU Timeout</label>
+                  <input id="cfg-laya-cpu-factor" type="number" step="0.5" min="1" max="20" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Falhas Circuit Breaker</label>
+                  <input id="cfg-laya-max-failures" type="number" min="1" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cooldown Breaker (s)</label>
+                  <input id="cfg-laya-cooldown" type="number" min="5" max="300" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Limiar Sim (Yes Th)</label>
+                  <input id="cfg-laya-yes-th" type="number" step="0.05" min="0.5" max="0.99" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Limiar Não (No Th)</label>
+                  <input id="cfg-laya-no-th" type="number" step="0.05" min="0.01" max="0.5" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Margem Mínima</label>
+                  <input id="cfg-laya-min-margin" type="number" step="0.01" min="0.01" max="0.5" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Max Chars Estado</label>
+                  <input id="cfg-laya-max-chars" type="number" min="300" max="10000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Plan Acima de (chars)</label>
+                  <input id="cfg-laya-plan-above" type="number" min="200" max="5000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Arquivo Auditoria Decisões</label>
+                  <input id="cfg-decision-audit-file" type="text" class="form-control" placeholder="./artifacts/decisions.jsonl" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Modos dos Pontos de Decisão DP1-DP6 (LAYA_DP_MODES JSON)</label>
+                <input id="cfg-laya-dp-modes" type="text" class="form-control" style="font-family:var(--font-mono); font-size:0.75rem;" placeholder='{"DP1":"shadow","DP2":"shadow","DP3":"active","DP4":"active","DP5":"shadow","DP6":"active"}' oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Arquivo Avaliação Laya</label>
+                  <input id="cfg-laya-eval-file" type="text" class="form-control" placeholder="./artifacts/laya_eval.json" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Validade Eval (dias)</label>
+                  <input id="cfg-laya-eval-max-days" type="number" min="1" max="90" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mínimo Exemplos Eval</label>
+                  <input id="cfg-eval-min-examples" type="number" min="5" max="200" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Margem Eval</label>
+                  <input id="cfg-eval-margin" type="number" step="0.01" min="0.01" max="0.5" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cobertura Mín Eval</label>
+                  <input id="cfg-eval-min-coverage" type="number" step="0.05" min="0.1" max="1.0" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group" style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.4rem;">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-laya-order-swap" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Swap de Ordem (LAYA_ORDER_SWAP):</strong> Mitigar viés de ordem executando duas passadas invertidas</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-laya-req-eval" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Exigir Avaliação (LAYA_REQUIRE_EVAL_FOR_ACTIVE):</strong> Fallback para shadow se eval estiver vencido</span>
                 </label>
               </div>
             </div>
           </div>
 
-          <!-- Botão Salvar Geral -->
+          <!-- Linha 5: Editor Direto do Arquivo .env (Modo Avançado) -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <div class="card" style="grid-column: 1 / -1;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                    Editor Direto do Arquivo .env (Modo Avançado / Todas as Variáveis)
+                  </div>
+                  <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
+                    Edite ou adicione qualquer variável de ambiente diretamente no arquivo. Alterações gravadas aqui atualizam imediatamente o processo e todos os formulários.
+                  </p>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="saveRawEnvDirect()" style="font-size:0.78rem;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
+                  Salvar Texto do .env
+                </button>
+              </div>
+
+              <div class="form-group" style="margin-bottom:0;">
+                <textarea
+                  id="cfg-raw-env"
+                  class="form-control"
+                  rows="14"
+                  style="font-family:var(--font-mono); font-size:0.78rem; line-height:1.45; white-space:pre; resize:vertical; background:var(--bg-input);"
+                  placeholder="# Conteúdo do seu arquivo .env..."
+                  oninput="markConfigDirty()"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botão Salvar Geral no Rodapé -->
           <div style="margin-top: 1.35rem; display:flex; justify-content:flex-end; align-items:center;">
             <div id="unsaved-badge" style="display:none; font-size:0.75rem; margin-right:0.85rem; color:var(--amber); align-items:center;">
               <span class="unsaved-dot"></span> Alterações não gravadas no .env
             </div>
             <button id="btn-save-settings" type="submit" class="btn btn-primary" style="padding:0.65rem 2rem; font-size:0.875rem;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              Gravar Configurações no Arquivo .env
+              Gravar Todas as Configurações no .env
             </button>
           </div>
         </form>
