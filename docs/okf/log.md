@@ -17,7 +17,7 @@ Este arquivo reservado registra a evolução das decisões arquiteturais (ADRs),
 ---
 
 ## 2026-10-12: Correção de Submissão Real (`dry_run=False`) e Sincronização Completa da Planilha
-- **Autor**: Antigravity Assistant & Rauan Bernardo Ribeiro de Araujo
+- **Autor**: Rauan Bernardo Ribeiro de Araujo
 - **Contexto**: Investigação e correção de falhas pós-submissão no modo real (`dry_run=False`) e da dessincronização entre a planilha local em cache (`cache/vagas_sheets_latest.xlsx`), a planilha de resultados (`artifacts/vagas_resultado.xlsx`) e a UI.
 - **Decisões Adotadas**:
   - **Confirmação Pós-Submissão e Seleção do Botão Submit (`BaseATSHandler._finalize` & `GenericSelectors.SUBMIT_BTN`)**:
@@ -33,7 +33,7 @@ Este arquivo reservado registra a evolução das decisões arquiteturais (ADRs),
 ---
 
 ## 2026-10-12: Redesenho da Navbar Superior e Automação Integral de Gargalos de Revisão Humana (`NEEDS_REVIEW`)
-- **Autor**: Antigravity Assistant & Rauan Bernardo Ribeiro de Araujo
+- **Autor**: Rauan Bernardo Ribeiro de Araujo
 - **Contexto**: Refatoração da barra de navegação superior (`header.navbar`) que apresentava compressão excessiva em múltiplas larguras de tela, seguida de investigação de causa-raiz e automação de todos os gargalos que levavam vagas para `NEEDS_REVIEW` ou `SKIPPED`.
 - **Decisões Adotadas**:
   - **Redesenho Estrutural da Navbar (`header.navbar`)**:
@@ -57,7 +57,7 @@ Este arquivo reservado registra a evolução das decisões arquiteturais (ADRs),
 ---
 
 ## 2026-10-12: Otimização Integral da Experiência do Usuário (UX/UI para Operadores Leigos)
-- **Autor**: Antigravity Assistant & Rauan Bernardo Ribeiro de Araujo
+- **Autor**: Rauan Bernardo Ribeiro de Araujo
 - **Contexto**: Auditoria aprofundada de usabilidade para operadores não-técnicos, eliminando atritos e implementando recursos de produtividade.
 - **Decisões Adotadas**:
   - Inclusão do **Guia Rápido de 3 Passos** com onboarding acionável e persistência de dispensa no `localStorage`.
@@ -73,7 +73,7 @@ Este arquivo reservado registra a evolução das decisões arquiteturais (ADRs),
 ---
 
 ## 2026-10-12: Identidade Visual Única e Design System "Candidata // Protocol (Studio Edition)"
-- **Autor**: Antigravity Assistant & Rauan Bernardo Ribeiro de Araujo
+- **Autor**: Rauan Bernardo Ribeiro de Araujo
 - **Contexto**: Eliminação de clichês estéticos de "vibe code" / "AI wrappers" genéricos (emojis infantis, gradientes roxos sem identidade, botões flutuantes descalibrados).
 - **Decisões Adotadas**:
   - Conceitualização da marca **Candidata // Protocol (Studio Edition / Quantum Stealth)**: estética de cockpit aeroespacial e telemetria de alta densidade.
@@ -86,7 +86,7 @@ Este arquivo reservado registra a evolução das decisões arquiteturais (ADRs),
 ---
 
 ## 2026-10-12: Implementação da Interface Web (UI) e Métricas em Tempo Real
-- **Autor**: Antigravity Assistant & Rauan Bernardo Ribeiro de Araujo
+- **Autor**: Rauan Bernardo Ribeiro de Araujo
 - **Contexto**: Criação de painel visual moderno para operação 100% autônoma por usuários não-técnicos, sem dependência de terminal ou IDE.
 - **Decisões Adotadas**:
   - Implementação da camada Web em FastAPI (`web.app`) servindo Single-Page Application (SPA) em HTML5/CSS3/JS sem dependências externas em tempo de execução.
@@ -99,7 +99,7 @@ Este arquivo reservado registra a evolução das decisões arquiteturais (ADRs),
 ---
 
 ## 2026-10-11: Criação da Documentação Oficial em Padrão OKF (Google Cloud)
-- **Autor**: Antigravity Assistant & Rauan Bernardo Ribeiro de Araujo
+- **Autor**: Rauan Bernardo Ribeiro de Araujo
 - **Contexto**: Preparação do projeto para auditoria e publicação em código aberto (Open Source).
 - **Ações**:
   - Estruturação do bundle de conhecimento em `docs/okf/` seguindo a especificação v0.2 do Google Cloud.
