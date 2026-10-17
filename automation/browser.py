@@ -35,6 +35,7 @@ class BrowserManager:
         self._browser: Browser | None = None
         self._camoufox_cm: Any | None = None
         self._is_camoufox: bool = False
+        self._contexts: set[BrowserContext] = set()
 
     @property
     def is_running(self) -> bool:
@@ -111,6 +112,13 @@ class BrowserManager:
 
     async def stop(self) -> None:
         """Fecha navegador e desliga processo do Playwright/Camoufox."""
+        for ctx in list(self._contexts):
+            try:
+                await ctx.close()
+            except Exception as exc:
+                logger.debug("Erro ao fechar contexto pendente: %s", exc)
+        self._contexts.clear()
+
         if self._camoufox_cm is not None:
             try:
                 await self._camoufox_cm.__aexit__(None, None, None)
@@ -197,19 +205,23 @@ class BrowserManager:
             context_kwargs["storage_state"] = str(self.settings.STORAGE_STATE_PATH.resolve())
 
         context: BrowserContext = await self._browser.new_context(**context_kwargs)
-        page: Page = await context.new_page()
-        page.set_default_timeout(self.settings.ACTION_TIMEOUT_MS)
-        page.set_default_navigation_timeout(self.settings.NAV_TIMEOUT_MS)
-
-        await self._setup_routing(page)
-
+        self._contexts.add(context)
         try:
-            yield page
-        finally:
+            page: Page = await context.new_page()
+            page.set_default_timeout(self.settings.ACTION_TIMEOUT_MS)
+            page.set_default_navigation_timeout(self.settings.NAV_TIMEOUT_MS)
+
+            await self._setup_routing(page)
+
             try:
-                await page.close()
-            except Exception as exc:
-                logger.debug("Erro ao fechar página: %s", exc)
+                yield page
+            finally:
+                try:
+                    await page.close()
+                except Exception as exc:
+                    logger.debug("Erro ao fechar página: %s", exc)
+        finally:
+            self._contexts.discard(context)
             try:
                 await context.close()
             except Exception as exc:

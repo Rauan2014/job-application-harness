@@ -27,10 +27,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Habilita CORS para permitir dev server Vite ou acesso local
+# Habilita CORS restrito ao localhost / 127.0.0.1 para segurança
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"^https?://(127\.0\.0\.1|localhost)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,9 +82,19 @@ async def sse_events(request: Request) -> StreamingResponse:
     )
 
 
+PROJECT_ROOT = Path(".").resolve()
+SCREENSHOTS_DIR = (PROJECT_ROOT / "artifacts" / "screenshots").resolve()
+
+
 @app.post("/api/run")
 async def run_automation(payload: dict[str, Any]) -> dict[str, Any]:
     """Inicia a execução da automação em segundo plano."""
+    sheet_param = payload.get("sheet")
+    if sheet_param and isinstance(sheet_param, str) and not sheet_param.startswith("http"):
+        resolved_sheet = Path(sheet_param).resolve()
+        if not str(resolved_sheet).startswith(str(PROJECT_ROOT)):
+            raise HTTPException(status_code=400, detail="Caminho de arquivo de planilha fora do projeto não é permitido.")
+
     res = await global_runner.start(payload)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("error"))
@@ -130,10 +140,16 @@ async def get_screenshot(filename: str):
     """Serve as capturas de tela salvas durante blockers ou revisões humanas."""
     # Protege contra path traversal
     safe_name = Path(filename).name
-    path = Path("artifacts/screenshots") / safe_name
-    if not path.exists():
+    if not safe_name or safe_name in (".", "..") or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Nome de arquivo inválido.")
+
+    target_path = (SCREENSHOTS_DIR / safe_name).resolve()
+    if not str(target_path).startswith(str(SCREENSHOTS_DIR)):
+        raise HTTPException(status_code=403, detail="Acesso negado: caminho fora do diretório permitido.")
+
+    if not target_path.exists() or not target_path.is_file():
         raise HTTPException(status_code=404, detail="Screenshot não encontrada.")
-    return FileResponse(path, media_type="image/png")
+    return FileResponse(target_path, media_type="image/png")
 
 
 # ==============================================================================

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -57,6 +58,8 @@ class WorkableHandler(BaseATSHandler):
     selectors: WorkableSelectors = WorkableSelectors()
 
     def can_handle(self, job: Job) -> bool:
+        if not self.validate_job_url(job.url):
+            return False
         if job.ats and job.ats.lower() == "workable":
             return True
         url = (job.url or "").lower()
@@ -78,7 +81,8 @@ class WorkableHandler(BaseATSHandler):
             if await loc.count() > 0 and await loc.first.is_visible():
                 try:
                     await loc.first.click(timeout=3000)
-                    await page.wait_for_timeout(1000)
+                    with contextlib.suppress(Exception):
+                        await loc.first.wait_for(state="hidden", timeout=1500)
                     break
                 except Exception:
                     pass
@@ -121,12 +125,24 @@ class WorkableHandler(BaseATSHandler):
                 logger.info("Clicando no botão de candidatura do Workable (%s)...", sel)
                 try:
                     await loc.first.click()
-                    await page.wait_for_timeout(2500)
+                    try:
+                        await page.wait_for_selector(
+                            "dialog[open], [data-ui='application-form'], input[name='firstname']",
+                            timeout=3000,
+                        )
+                    except Exception:
+                        await page.wait_for_load_state("domcontentloaded")
                     break
                 except Exception:
                     try:
                         await loc.first.click(force=True)
-                        await page.wait_for_timeout(2500)
+                        try:
+                            await page.wait_for_selector(
+                                "dialog[open], [data-ui='application-form'], input[name='firstname']",
+                                timeout=3000,
+                            )
+                        except Exception:
+                            await page.wait_for_load_state("domcontentloaded")
                         break
                     except Exception:
                         pass
@@ -310,7 +326,8 @@ class WorkableHandler(BaseATSHandler):
                 if any(img_ext in accept_attr for img_ext in ("image", ".jpg", ".jpeg", ".png", "video", ".mp4")) and "pdf" not in accept_attr:
                     continue
                 await f_el.set_input_files(str(resume.path))
-                await page.wait_for_timeout(800)
+                with contextlib.suppress(Exception):
+                    await f_el.evaluate("e => Boolean(e.files && e.files.length > 0)")
             except Exception:
                 pass
 

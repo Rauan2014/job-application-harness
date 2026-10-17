@@ -18,9 +18,20 @@ def extract_text(path: Path) -> str:
     """Extrai o texto de todas as páginas. PDF ilegível/sem texto → `PdfTextError`."""
     try:
         reader = PdfReader(str(path))
+        if getattr(reader, "is_encrypted", False):
+            try:
+                decrypted = reader.decrypt("")
+                if decrypted == 0:
+                    raise PdfTextError(f"PDF criptografado ou protegido por senha: {path.name}")
+            except PdfTextError:
+                raise
+            except Exception as exc:
+                raise PdfTextError(f"PDF criptografado ou protegido por senha: {path.name}: {exc}") from exc
         pages = [page.extract_text() or "" for page in reader.pages]
-    except (PdfReadError, OSError, ValueError, KeyError, TypeError) as exc:
-        raise PdfTextError(f"PDF ilegível: {path.name}: {exc}") from exc
+    except PdfTextError:
+        raise
+    except (PdfReadError, OSError, ValueError, KeyError, TypeError, Exception) as exc:
+        raise PdfTextError(f"PDF ilegível ou corrompido: {path.name}: {exc}") from exc
     text = re.sub(r"[ \t]+", " ", "\n".join(pages))
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     if not text:

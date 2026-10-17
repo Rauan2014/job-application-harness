@@ -1,7 +1,10 @@
 .env
-service_account.json
-oauth_client.json
-token.json
+.env.*
+!.env.example
+service_account*.json
+oauth_client*.json
+token*.json
+storage_state*.json
 cache/
 artifacts/
 __pycache__/
@@ -10,7 +13,7 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
-client_secret.json
+client_secret*.json
 *.tmp
 data/profile.json
 data/vagas.csv
@@ -19,3 +22,4 @@ data/vagas.xlsx
 *.log
 .DS_Store
 Thumbs.db
+

@@ -57,11 +57,20 @@ def get_ui_config() -> dict[str, Any]:
 
     raw_env_content = ""
     if ENV_FILE_PATH.exists():
-        raw_env_content = ENV_FILE_PATH.read_text(encoding="utf-8")
+        raw_lines = []
+        for line in ENV_FILE_PATH.read_text(encoding="utf-8").splitlines():
+            line_str = line.strip()
+            if line_str.startswith("LLM_API_KEY="):
+                k, v = line.split("=", 1)
+                v_clean = v.strip().strip("'\"")
+                raw_lines.append(f"{k}={mask_secret(v_clean)}")
+            else:
+                raw_lines.append(line)
+        raw_env_content = "\n".join(raw_lines)
 
     return {
         "llm": {
-            "api_key": api_key_secret,
+            "api_key": mask_secret(api_key_secret),
             "api_key_masked": mask_secret(api_key_secret),
             "is_key_set": bool(api_key_secret and api_key_secret != "your_api_key_here"),
             "base_url": raw.get("LLM_BASE_URL", getattr(settings, "LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")),
@@ -133,12 +142,28 @@ def save_ui_config(updates: dict[str, Any]) -> dict[str, Any]:
     # Se foi enviado o arquivo .env bruto (modo editor direto)
     if "raw_env" in updates and isinstance(updates["raw_env"], str):
         content = updates["raw_env"].replace("\r\n", "\n")
-        ENV_FILE_PATH.write_text(content, encoding="utf-8")
+        raw_old = load_raw_env()
+        new_lines = []
         for line in content.splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                os.environ[k.strip()] = v.strip().strip("'\"")
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                k, v = stripped.split("=", 1)
+                k_clean = k.strip()
+                v_clean = v.strip().strip("'\"")
+                if k_clean == "LLM_API_KEY" and any(m in v_clean for m in ("•••", "****", "••••")):
+                    orig_secret = raw_old.get("LLM_API_KEY", "")
+                    new_lines.append(f"{k_clean}={orig_secret}")
+                    os.environ[k_clean] = orig_secret
+                    continue
+                os.environ[k_clean] = v_clean
+            new_lines.append(line)
+        final_content = "\n".join(new_lines) + ("\n" if new_lines else "")
+        ENV_FILE_PATH.write_text(final_content, encoding="utf-8")
+        if os.name == "posix":
+            try:
+                os.chmod(ENV_FILE_PATH, 0o600)
+            except Exception:
+                pass
         raw = load_raw_env()
         if raw.get("GOOGLE_SHEET_URL"):
             try:
@@ -295,6 +320,11 @@ def save_ui_config(updates: dict[str, Any]) -> dict[str, Any]:
             new_lines.append(f"{k}={val}")
 
     ENV_FILE_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    if os.name == "posix":
+        try:
+            os.chmod(ENV_FILE_PATH, 0o600)
+        except Exception:
+            pass
 
     # Atualiza o os.environ do processo em execução
     for k, v in mapping.items():

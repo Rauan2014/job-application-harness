@@ -707,12 +707,12 @@ function renderResultsTable() {
             </button>
             ${
               item.screenshot_url
-                ? `<button class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="viewScreenshot('${item.screenshot_url}', '${escapeHtml(item.company)}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/></svg> Tela</button>`
+                ? `<button class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="viewScreenshot('${escapeHtml(item.screenshot_url).replace(/'/g, "\\'")}', '${escapeHtml(item.company).replace(/'/g, "\\'")}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/></svg> Tela</button>`
                 : ''
             }
             ${
               item.url
-                ? `<a href="${item.url}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem; text-decoration:none;" title="Abrir link da vaga"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg></a>`
+                ? `<a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem; text-decoration:none;" title="Abrir link da vaga"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg></a>`
                 : ''
             }
           </div>
@@ -923,7 +923,7 @@ function openJobDetailsModal(jobId) {
           <div class="detail-val">
             ${
               item.url
-                ? `<a href="${item.url}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.75rem; text-decoration:none;">Abrir Vaga ↗</a>`
+                ? `<a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.75rem; text-decoration:none;">Abrir Vaga ↗</a>`
                 : 'Não disponível'
             }
           </div>
@@ -935,7 +935,7 @@ function openJobDetailsModal(jobId) {
           ? `
         <div style="margin-top:1rem; text-align:center;">
           <div class="detail-label" style="text-align:left; margin-bottom:0.5rem;">Captura da Tela pelo Robô</div>
-          <img src="${item.screenshot_url}" alt="Screenshot" style="max-width:100%; max-height:300px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle); cursor:pointer;" onclick="viewScreenshot('${item.screenshot_url}', '${escapeHtml(item.company)}')" title="Clique para ampliar em tela cheia" />
+          <img src="${sanitizeUrl(item.screenshot_url)}" alt="Screenshot" style="max-width:100%; max-height:300px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle); cursor:pointer;" onclick="viewScreenshot('${escapeHtml(item.screenshot_url).replace(/'/g, "\\'")}', '${escapeHtml(item.company).replace(/'/g, "\\'")}')" title="Clique para ampliar em tela cheia" />
         </div>
       `
           : ''
@@ -996,10 +996,10 @@ function renderScreenshotsGallery() {
   container.innerHTML = items
     .map(
       (item) => `
-    <div class="card" style="padding:1rem; cursor:pointer;" onclick="viewScreenshot('${item.screenshot_url}', '${escapeHtml(item.company)}')">
+    <div class="card" style="padding:1rem; cursor:pointer;" onclick="viewScreenshot('${escapeHtml(item.screenshot_url).replace(/'/g, "\\'")}', '${escapeHtml(item.company).replace(/'/g, "\\'")}')">
       <div style="font-weight:600; margin-bottom:0.2rem;">${escapeHtml(item.company)}</div>
       <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">${escapeHtml(item.title)}</div>
-      <img src="${item.screenshot_url}" alt="Screenshot" style="width:100%; height:180px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);" />
+      <img src="${sanitizeUrl(item.screenshot_url)}" alt="Screenshot" style="width:100%; height:180px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);" />
       <div style="margin-top:0.75rem; font-size:0.75rem; color:var(--danger);">${escapeHtml(item.reason || 'Revisão Necessária')}</div>
     </div>
   `
@@ -1339,7 +1339,7 @@ function renderCookiesUI() {
   if (portalsEl) {
     if (c.known_portals && c.known_portals.length > 0) {
       portalsEl.innerHTML = c.known_portals
-        .map((p) => `<span class="badge badge-info"><span class="badge-dot"></span> ${p} Conectado</span>`)
+        .map((p) => `<span class="badge badge-info"><span class="badge-dot"></span> ${escapeHtml(p)} Conectado</span>`)
         .join(' ');
     } else if (c.domains && c.domains.length > 0) {
       portalsEl.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);">${c.domains.length} domínios salvos</span>`;
@@ -1538,7 +1538,7 @@ function showToast(message, type = 'info') {
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
+  if (str == null) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -1546,3 +1546,13 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+function sanitizeUrl(url) {
+  if (!url) return '';
+  const clean = String(url).trim();
+  if (/^https?:\/\//i.test(clean) || clean.startsWith('/') || clean.startsWith('./')) {
+    return escapeHtml(clean);
+  }
+  return '#';
+}
+

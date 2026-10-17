@@ -1,28 +1,37 @@
-# Candidata IA — Automação Ética de Candidaturas
+# Candidata IA — Motor Open-Source de Automação Ética de Candidaturas
 
-Sistema autônomo de automação de candidaturas em plataformas de vagas (Lever, Greenhouse e Agregadores compatíveis) com triagem por aprendizado de máquina calibrado (Laya), resolução de currículos e preenchimento ético assistido por LLM.
+Motor autônomo de código aberto (CLI & API Headless) para automação de candidaturas em plataformas de vagas (Lever, Greenhouse, Workable, Indeed e Agregadores compatíveis), com triagem por aprendizado de máquina calibrado (Laya DP1–DP6), resolução de currículos e preenchimento ético assistido por LLM.
 
 ---
 
-## 🖥️ Painel Visual (Interface Web para Usuários Não-Técnicos)
+## ☁️ Candidata Cloud (Para Usuários Não-Técnicos — Zero Código & 1-Clique)
 
-Para usuários que preferem **não utilizar terminais, IDEs ou comandos de código**, o Candidata IA conta com uma interface gráfica completa e reativa:
+> [!TIP]
+> **Não é programador ou não quer instalar Python, configurar `.venv`, chaves de API (`.env`), Google Cloud OAuth e editar arquivos JSON no terminal?**
+>
+> Utilize o **Candidata Cloud** — nossa plataforma oficial gerenciada em nuvem:
+> - 📄 **Importação Mágica de Currículo**: Suba seu PDF e a IA monta seu perfil completo em segundos (sem editar `data/profile.json`).
+> - 🤖 **IA e Navegadores Anti-Detecção Inclusos**: Sem precisar criar contas no Google AI Studio, OpenAI ou instalar binários do Playwright/Camoufox.
+> - 🔗 **Conexão em 1 Clique**: Integre sua planilha de vagas e acompanhe fotos (screenshots) de cada candidatura em tempo real pelo navegador ou celular.
+>
+> 👉 **[Acessar o Candidata Cloud (Configuração e Execução Gerenciada)](https://candidata.cloud)** *(Em breve / Acesso Antecipado)*
 
-```
-iniciar_painel.bat   (Duplo clique no Windows para abrir automaticamente)
-# Ou via linha de comando:
+---
+
+## 🛠️ Servidor de Telemetria Local & Cloud Bridge (Para Desenvolvedores)
+
+Para desenvolvedores que rodam o motor localmente ou desejam parear seu IP residencial com o painel em nuvem, o repositório inclui um servidor FastAPI + SSE local:
+
+```bash
+# Inicia a API local e o inspetor de telemetria em http://127.0.0.1:8000
 python -m web
 ```
 
-### O que você pode fazer pelo Painel Visual:
-- 📊 **Acompanhamento ao Vivo (HUD)**: Veja exatamente em qual vaga e etapa o navegador está a cada segundo (*"Inspecionando formulário"*, *"Gerando respostas com IA"*, *"Preenchendo campos"*), com barra de progresso em tempo real e contador de vagas restantes.
-- 📄 **Currículos Enviados**: Lista detalhada mostrando o nome exato do PDF selecionado e anexado para cada empresa.
-- ⏱️ **Tempo da IA**: Duração medida em segundos por vaga e tempo total acumulado da sessão.
-- 🪙 **Tokens Gastos**: Quantidade precisa de tokens de inteligência artificial consumidos por candidatura (prompt vs completion).
-- ⚠️ **Revisão Humana & Screenshots**: Visualizador integrado de evidências que permite abrir e ampliar a captura de tela da página onde a IA pausou por CAPTCHA, blocker ou dúvida.
-- 🔑 **Configuração de Chaves de API**: Insira suas chaves do Google AI Studio (Gemini) ou OpenAI com mascaramento de segurança e teste a conexão em tempo real com um clique.
-- 🍪 **Gerenciador de Cookies de Contas**: Faça login visual no Indeed/Gupy/LinkedIn com um clique ou cole cookies de extensões de navegador (*EditThisCookie*) para evitar telas de login e bloqueios.
-- 📚 **Documentação Completa**: Disponível na pasta [OKF/](OKF/) seguindo o padrão Open Knowledge Format.
+### Recursos do Inspetor Local / API Bridge (`web/`):
+- 📊 **Stream SSE (`/api/events`)**: Telemetria em tempo real de cada etapa do navegador (`inspect`, `fill`, `submit`) e decisões DP1–DP6.
+- 📄 **Auditoria de Currículos e Tokens (`/api/metrics`)**: Medição de latência por vaga e consumo de tokens (prompt vs completion).
+- ⚠️ **Inspeção de Bloqueios (`/api/screenshots`)**: Evidências visuais quando a invariante ética pausa por CAPTCHA, blocker ou dado ausente (`NEEDS_REVIEW`).
+- 📚 **Documentação de Arquitetura (OKF)**: Disponível em [`docs/okf/index.md`](docs/okf/index.md) seguindo o padrão Open Knowledge Format.
 
 ---
 
@@ -227,4 +236,5 @@ A especificação técnica e arquitetura do projeto seguem o padrão **Open Know
 
 ## 9. Licença
 
-Distribuído sob a licença [MIT](LICENSE). Consulte `LICENSE` para mais informações.
+Distribuído sob a licença **Sustainable Use License (SUL 1.0)** — modelo *Fair-Code*.  
+O uso pessoal, de pesquisa e interno corporativo é totalmente gratuito. É proibido o uso deste software como serviço gerenciado concorrente (SaaS) ou a incorporação comercial sem autorização expressa do autor. Consulte o arquivo [`LICENSE`](LICENSE) para mais detalhes.

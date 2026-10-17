@@ -54,6 +54,18 @@ class BaseATSHandler(ABC):
     LOGIN_SELECTORS: tuple[str, ...] = LOGIN_SELECTORS
     DECLINE_TERMS: tuple[str, ...] = DECLINE_TERMS
 
+    @staticmethod
+    def validate_job_url(url: str | None) -> bool:
+        """Valida se a URL é válida e possui esquema http:// ou https://."""
+        if not url or not isinstance(url, str):
+            return False
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url.strip())
+            return parsed.scheme.lower() in ("http", "https") and bool(parsed.netloc)
+        except Exception:
+            return False
+
     @abstractmethod
     def can_handle(self, job: Job) -> bool:
         """Verifica se este handler suporta a vaga informada (por ats ou regex na URL)."""
@@ -332,6 +344,10 @@ class BaseATSHandler(ABC):
                     "recebida",
                     "recebido",
                     "submitted",
+                    "enviado",
+                    "enviada",
+                    "formulário enviado",
+                    "formulario enviado",
                     "candidatura enviada",
                     "application received",
                     "application submitted",
@@ -365,11 +381,17 @@ class BaseATSHandler(ABC):
                                 has_error = True
                                 break
                     if not has_error:
-                        logger.info(
-                            "Submit acionado e nenhum erro de validação visível na tela (%s). Confirmado.",
-                            self.name,
-                        )
-                        confirmed = True
+                        submit_still_active = False
+                        with contextlib.suppress(Exception):
+                            submit_still_active = (
+                                await submit_btn.is_visible() and await submit_btn.is_enabled()
+                            )
+                        if not submit_still_active:
+                            logger.info(
+                                "Submit acionado e nenhum erro de validação visível na tela (%s). Confirmado.",
+                                self.name,
+                            )
+                            confirmed = True
 
             if not confirmed:
                 raise TimeoutError(f"Confirmação não detectada via '{confirmation_selector}' nem via página de sucesso.")

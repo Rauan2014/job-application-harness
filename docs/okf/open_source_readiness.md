@@ -73,12 +73,9 @@ flowchart LR
 - **Diagnóstico**: A pasta contém dezenas de cópias de planilhas (`planilha_atualizada_*.xlsx`), prints de vagas aplicadas e o histórico `decisions.jsonl`.
 - **Ação**: Ignorar completamente a pasta `artifacts/` no `.gitignore`, mantendo apenas um arquivo `.gitkeep` vazio se necessário.
 
-#### 🟡 5. Fallback Pessoal em `core/pipeline.py`
-- **Diagnóstico**: Na linha 262, o código possui o fallback fixo:
-  ```python
-  return (profile.links.get("linkedin") or "https://linkedin.com/in/rauan-bernardo") + " (Video intro available upon request)"
-  ```
-- **Ação**: Substituir por:
+#### ✅ 5. Fallback Pessoal em `core/pipeline.py` (Saneado)
+- **Diagnóstico**: Na linha 262, o código possuía um fallback fixo de URL.
+- **Ação Aplicada**: Substituído por leitura dinâmica de `profile.links`:
   ```python
   linkedin_url = profile.links.get("linkedin", "")
   return (f"{linkedin_url} (Video intro available upon request)").strip()
@@ -92,13 +89,13 @@ flowchart LR
 
 ## 3. Estratégia de Licenciamento
 
-Recomendação de licença para o projeto:
+O projeto adota o modelo **Fair-Code** através da licença **Sustainable Use License (SUL 1.0)**:
 
-| Opção | Características | Recomendação |
+| Opção | Características | Status no Projeto |
 | :--- | :--- | :--- |
-| **MIT License** | Máxima permissividade, amplamente adotada pela comunidade Python/IA, atrai maior número de contribuidores e adoção. | ⭐ **Altamente Recomendada** |
-| **Apache 2.0** | Permissiva como o MIT, mas inclui concessão explícita de patentes e proteção de marcas registradas. | ⭐ **Excelente Alternativa Corporativa** |
-| **AGPL v3** | Copyleft forte; obriga qualquer pessoa que modifique e rode o software como serviço na rede a abrir o código. | Não recomendada se o objetivo for ampla tração e adoção voluntária. |
+| **Sustainable Use License (SUL 1.0)** | Uso pessoal, acadêmico e interno 100% gratuito; proíbe a oferta do software como serviço gerenciado/SaaS concorrente e previne exploração comercial predatória por terceiros. | ⭐ **Licença Adotada** |
+| **MIT / Apache 2.0** | Máxima permissividade, porém permite que terceiros empacotem e vendam o motor de automação como SaaS sem retorno ao autor. | Descartada |
+| **AGPL v3** | Copyleft de rede estrito. | Descartada |
 
 ---
 
@@ -108,7 +105,7 @@ Recomendação de licença para o projeto:
    - Ajustar `.env.example`, `core/pipeline.py` e testes unitários.
    - Atualizar `.gitignore` rigoroso.
 2. **Documentação e Governança**:
-   - Adicionar arquivo `LICENSE` (MIT ou Apache 2.0).
+   - Adicionar arquivo `LICENSE` (Sustainable Use License 1.0).
    - Inserir seção de Disclaimer Legal no `README.md`.
    - Adicionar `CONTRIBUTING.md` com instruções de testes (`pytest -q`).
 3. **Inicialização do Repositório**:

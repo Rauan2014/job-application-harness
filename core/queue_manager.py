@@ -36,6 +36,8 @@ class QueueManager:
         self.profile = profile
         self._sleep = sleep_fn
         self._lock = asyncio.Lock()
+        self._processed_job_ids: set[str] = set()
+        self._in_flight_job_ids: set[str] = set()
         self.results: list[ApplicationResult] = []
 
     async def _persist_result(self, result: ApplicationResult) -> None:
@@ -132,7 +134,9 @@ class QueueManager:
 
         assert last_result is not None
         await self._persist_result(last_result)
-        self.results.append(last_result)
+        async with self._lock:
+            self.results.append(last_result)
+            self._processed_job_ids.add(last_result.job_id)
         return last_result
 
     async def run(
@@ -142,8 +146,16 @@ class QueueManager:
         on_progress: Callable[[Job, ApplicationResult], Any] | None = None,
         on_step: Callable[[Job, str], Any] | None = None,
     ) -> list[ApplicationResult]:
-        """Processa a lista de vagas com concorrência limitada por Semaphore."""
-        jobs_to_process = jobs[:limit] if limit is not None else jobs
+        """Processa a lista de vagas com concorrência limitada por Semaphore e idempotência estrita."""
+        raw_slice = jobs[:limit] if limit is not None else jobs
+        # Deduplica lista de vagas preservando a ordem
+        seen: set[str] = set()
+        jobs_to_process: list[Job] = []
+        for j in raw_slice:
+            if j.id not in seen:
+                seen.add(j.id)
+                jobs_to_process.append(j)
+
         if not jobs_to_process:
             logger.info("Nenhuma vaga para processar.")
             return []
@@ -151,8 +163,27 @@ class QueueManager:
         semaphore = asyncio.Semaphore(self.settings.MAX_CONCURRENCY)
 
         async def worker(job: Job) -> ApplicationResult:
+            async with self._lock:
+                if job.id in self._processed_job_ids or job.id in self._in_flight_job_ids:
+                    logger.info("Vaga '%s' já processada ou em execução. Ignorando para idempotência.", job.id)
+                    for r in self.results:
+                        if r.job_id == job.id:
+                            return r
+                    return ApplicationResult(
+                        job_id=job.id,
+                        status=TaskStatus.SKIPPED,
+                        reason="Vaga já processada anteriormente (idempotência garantida).",
+                        dry_run=self.settings.DRY_RUN,
+                    )
+                self._in_flight_job_ids.add(job.id)
+
             async with semaphore:
-                res = await self._process_single_job_with_retries(job, on_step=on_step)
+                try:
+                    res = await self._process_single_job_with_retries(job, on_step=on_step)
+                finally:
+                    async with self._lock:
+                        self._in_flight_job_ids.discard(job.id)
+
                 if on_progress:
                     try:
                         callback_res = on_progress(job, res)

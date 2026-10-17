@@ -67,6 +67,8 @@ class LeverHandler(BaseATSHandler):
     selectors: LeverSelectors = LeverSelectors()
 
     def can_handle(self, job: Job) -> bool:
+        if not self.validate_job_url(job.url):
+            return False
         if job.ats and job.ats.lower() == "lever":
             return True
         url = (job.url or "").lower()
@@ -101,7 +103,10 @@ class LeverHandler(BaseATSHandler):
                 await page.goto(apply_href, wait_until="domcontentloaded")
             else:
                 await apply_btn.first.click()
-                await page.wait_for_timeout(1500)
+                try:
+                    await page.wait_for_selector(self.selectors.FORM, timeout=3000)
+                except Exception:
+                    await page.wait_for_load_state("domcontentloaded")
             await self._check_blockers(page)
 
         # Extração de perguntas adicionais
@@ -256,11 +261,11 @@ class LeverHandler(BaseATSHandler):
             city = profile.location.split(",")[0].strip()
             await loc_input.click()
             await loc_input.press_sequentially(city, delay=80)
-            await page.wait_for_timeout(1500)
             suggestions = page.locator(".dropdown-location, #location-0, .dropdown-results > div")
-            if await suggestions.count() > 0:
+            with contextlib.suppress(Exception):
+                await suggestions.first.wait_for(state="visible", timeout=2000)
+            if await suggestions.count() > 0 and await suggestions.first.is_visible():
                 await suggestions.first.click()
-                await page.wait_for_timeout(500)
             else:
                 await loc_input.fill(profile.location)
 

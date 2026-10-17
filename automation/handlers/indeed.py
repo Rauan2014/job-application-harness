@@ -259,7 +259,8 @@ class IndeedApplyHandler(BaseATSHandler):
                     logger.info("Clicando no card de currículo visível no Indeed...")
                     try:
                         await c.click()
-                        await page.wait_for_timeout(1000)
+                        with contextlib.suppress(Exception):
+                            await c.wait_for(state="visible", timeout=1000)
                         return True
                     except Exception:
                         pass
@@ -270,7 +271,8 @@ class IndeedApplyHandler(BaseATSHandler):
             logger.info("Enviando arquivo de currículo '%s' para o Indeed Apply...", resume.path.name)
             try:
                 await file_inputs.first.set_input_files(str(resume.path.resolve()))
-                await page.wait_for_timeout(2500)
+                with contextlib.suppress(Exception):
+                    await file_inputs.first.evaluate("e => Boolean(e.files && e.files.length > 0)")
                 return True
             except Exception as exc:
                 logger.warning("Falha ao anexar currículo no Indeed: %s", exc)
@@ -297,11 +299,12 @@ class IndeedApplyHandler(BaseATSHandler):
                     if not await btn.is_visible():
                         continue
 
-                    # Aguarda até 3 tentativas rápidas para o botão habilitar
+                    # Aguarda o botão estar habilitado
                     for _ in range(3):
                         if await btn.is_enabled():
                             break
-                        await page.wait_for_timeout(600)
+                        with contextlib.suppress(Exception):
+                            await btn.wait_for(state="visible", timeout=500)
 
                     if not await btn.is_enabled():
                         continue
@@ -312,7 +315,8 @@ class IndeedApplyHandler(BaseATSHandler):
                     except Exception:
                         await btn.click(force=True)
 
-                    await page.wait_for_timeout(2500)
+                    with contextlib.suppress(Exception):
+                        await page.wait_for_load_state("domcontentloaded", timeout=2500)
                     return True
                 except Exception as exc:
                     logger.debug("Tentativa no botão %s (índice %d) falhou: %s", sel, idx, exc)

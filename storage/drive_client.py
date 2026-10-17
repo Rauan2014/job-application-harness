@@ -100,6 +100,11 @@ def get_credentials(
                 creds = flow.run_local_server(port=0)
 
             token_path.write_text(creds.to_json(), encoding="utf-8")
+            if os.name == "posix":
+                try:
+                    os.chmod(token_path, 0o600)
+                except Exception:
+                    pass
         return creds
     else:
         raise DriveAccessError(
@@ -168,6 +173,30 @@ def _local_name(file: DriveFile) -> str:
     return safe
 
 
+def _execute_api_call_with_retry(call_fn: Any, action: str, max_retries: int = 3, base_delay: float = 1.0) -> Any:
+    """Executa chamadas à API do Google com retry e backoff exponencial em erros transitórios."""
+    import time
+    for attempt in range(max_retries + 1):
+        try:
+            return call_fn()
+        except Exception as exc:
+            status = _http_status(exc)
+            is_transient = status in (429, 500, 502, 503, 504) or isinstance(exc, (ConnectionError, TimeoutError, OSError))
+            if is_transient and attempt < max_retries:
+                delay = base_delay * (2 ** attempt)
+                log.warning(
+                    "Erro transitório no Google Drive (%s) ao %s. Retentando em %.1fs (%d/%d)...",
+                    status or type(exc).__name__,
+                    action,
+                    delay,
+                    attempt + 1,
+                    max_retries,
+                )
+                time.sleep(delay)
+                continue
+            raise DriveClient._translate(exc, action) from exc
+
+
 class DriveClient:
     """Lista e sincroniza os currículos da pasta do Drive para o cache local."""
 
@@ -204,8 +233,8 @@ class DriveClient:
         files: list[DriveFile] = []
         token: str | None = None
         while True:
-            try:
-                response = (
+            def _fetch_page():
+                return (
                     self._service.files()
                     .list(
                         q=query,
@@ -217,8 +246,8 @@ class DriveClient:
                     )
                     .execute()
                 )
-            except Exception as exc:  # noqa: BLE001
-                raise self._translate(exc, "listar a pasta") from exc
+
+            response = _execute_api_call_with_retry(_fetch_page, "listar a pasta")
             files.extend(DriveFile(**item) for item in response.get("files", []))
             token = response.get("nextPageToken")
             if not token:
@@ -264,7 +293,7 @@ class DriveClient:
             request = files.export_media(fileId=file.id, mimeType=PDF_MIME)
         else:
             request = files.get_media(fileId=file.id, supportsAllDrives=True)
-        data = request.execute()
+        data = _execute_api_call_with_retry(request.execute, f"baixar '{file.name}'")
         if not isinstance(data, (bytes, bytearray)):
             raise DriveAccessError(f"conteúdo inesperado para {file.name}")
         return bytes(data)

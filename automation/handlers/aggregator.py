@@ -249,6 +249,8 @@ class AggregatorHandler(BaseATSHandler):
 
     def can_handle(self, job: Job) -> bool:
         """Suporta agregadores conhecidos e portais mapeados."""
+        if not self.validate_job_url(job.url):
+            return False
         url = (job.url or "").lower()
         # Se for diretamente Lever, Greenhouse ou Workable, deixa os handlers específicos agirem
         if "lever.co" in url or "greenhouse.io" in url or "workable.com" in url:
@@ -261,8 +263,6 @@ class AggregatorHandler(BaseATSHandler):
         for (f_comp, f_tit), _ in _URL_FALLBACKS.items():
             if f_comp in company_clean and (not f_tit or f_tit in title_clean):
                 return True
-        if not url.startswith(("http://", "https://")):
-            return False
         # Suporta domínios de agregadores conhecidos
         return any(domain in url for domain in _KNOWN_AGGREGATOR_DOMAINS)
 

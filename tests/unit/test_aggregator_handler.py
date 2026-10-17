@@ -249,3 +249,34 @@ async def test_remotar_next_data_outbound_extraction() -> None:
     page.locator = MagicMock(side_effect=locator_side_effect)
     outbound = await handler._find_outbound_apply_url(page)
     assert outbound == "https://extractta.inhire.app/vagas/e4f6427d/eng"
+
+
+@pytest.mark.parametrize(
+    ("company", "url", "expected_handled"),
+    [
+        ("Sierra Studio", "https://jobs.ashbyhq.com/sierra-studio/64d8bf9f-9c84-469c-bff3-e15c541e9bd0/application", True),
+        ("Sinqia / Evertec", "https://jobs.quickin.io/sinqia/apply?job_id=6ac3e23e8759e00013ac4841", True),
+        ("Kognit", "https://kognit.vagas.solides.com.br/vaga/929436", True),
+        ("Jump", "https://remotar.com.br/job/165249/jump/engenheiro-de-ia", True),
+        ("Desconhecida", "https://unsupported-ats-domain.org/apply/123", False),
+    ],
+)
+def test_aggregator_can_handle_specialized_ats(company: str, url: str, expected_handled: bool) -> None:
+    """Valida cenários parametrizados de agregadores e portais (Ashby, Quickin, Sólides, Kognit, Jump)."""
+    handler = AggregatorHandler()
+    job = _make_job(url=url, company=company)
+    assert handler.can_handle(job) is expected_handled
+
+
+def test_aggregator_ashby_systemfield_resume_selector() -> None:
+    """Valida se o seletor de currículo do Aggregator captura os campos de sistema do Ashby."""
+    handler = AggregatorHandler()
+    assert "_systemfield_resume" in handler.selectors.RESUME
+    assert "curriculo" in handler.selectors.RESUME
+
+
+def test_aggregator_solides_apply_button_selector() -> None:
+    """Valida se o seletor de submit/apply do Aggregator cobre botões típicos da Sólides e Quickin."""
+    handler = AggregatorHandler()
+    assert "Candidatar" in handler.selectors.SUBMIT_BTN
+    assert "Continuar" in handler.selectors.SUBMIT_BTN or "Continue" in handler.selectors.SUBMIT_BTN

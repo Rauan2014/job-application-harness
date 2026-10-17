@@ -112,7 +112,16 @@ def write_results(
             link_cell.hyperlink = job.url
 
     out.parent.mkdir(parents=True, exist_ok=True)
-    workbook.save(out)
+    try:
+        workbook.save(out)
+    except PermissionError as exc:
+        fallback_out = out.with_name(f"{out.stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{out.suffix}")
+        log.warning("Arquivo '%s' bloqueado para escrita (%s). Salvando em fallback: '%s'", out, exc, fallback_out)
+        workbook.save(fallback_out)
+        return fallback_out
+    except Exception as exc:
+        log.error("Erro ao salvar planilha de resultados em %s: %s. Estado permanece íntegro em memória.", out, exc)
+        raise
     return out
 
 
@@ -210,12 +219,24 @@ def update_google_sheet_results(
         "valueInputOption": "USER_ENTERED",
         "data": data_updates,
     }
-    sheets_service.spreadsheets().values().batchUpdate(
-        spreadsheetId=spreadsheet_id,
-        body=body,
-    ).execute()
-    log.info("Google Sheets '%s' atualizado com sucesso (%d células modificadas).", spreadsheet_id, len(data_updates))
-    return True
+    try:
+        from storage.drive_client import _execute_api_call_with_retry
+
+        def _do_batch_update():
+            return sheets_service.spreadsheets().values().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body=body,
+            ).execute()
+
+        _execute_api_call_with_retry(_do_batch_update, "atualizar Google Sheets online")
+        log.info("Google Sheets '%s' atualizado com sucesso (%d células modificadas).", spreadsheet_id, len(data_updates))
+        return True
+    except Exception as exc:
+        log.error(
+            "Falha ao atualizar Google Sheets online (%s). Os resultados permanecem seguros em memória e no cache local.",
+            exc,
+        )
+        return False
 
 
 def sync_sheet_with_local_state(

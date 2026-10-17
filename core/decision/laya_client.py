@@ -88,7 +88,11 @@ class LayaSidecarClient:
                 if resp.status_code >= 400:
                     raise DecisionUnavailable(f"Health check falhou: HTTP {resp.status_code}")
                 data = resp.json()
-            except (httpx.TransportError, httpx.TimeoutException, ValueError) as exc:
+                if not isinstance(data, dict):
+                    raise DecisionUnavailable("Health check retornou formato inesperado (não é dict)")
+            except DecisionUnavailable:
+                raise
+            except (httpx.TransportError, httpx.TimeoutException, ValueError, Exception) as exc:
                 raise DecisionUnavailable(f"Sidecar Laya inacessível no health: {exc}") from exc
 
             degraded = bool(data.get("degraded", False))
@@ -113,7 +117,11 @@ class LayaSidecarClient:
                 if resp.status_code >= 400:
                     raise DecisionUnavailable(f"Plan falhou com HTTP {resp.status_code}")
                 data = resp.json()
-            except (httpx.TransportError, httpx.TimeoutException, ValueError) as exc:
+                if not isinstance(data, dict):
+                    raise DecisionUnavailable("Plan retornou formato inesperado (não é dict)")
+            except DecisionUnavailable:
+                raise
+            except (httpx.TransportError, httpx.TimeoutException, ValueError, Exception) as exc:
                 raise DecisionUnavailable(f"Erro ao consultar /plan: {exc}") from exc
 
             truncated_state = False
@@ -160,12 +168,17 @@ class LayaSidecarClient:
 
             try:
                 data = resp.json()
+                if not isinstance(data, dict):
+                    self._record_failure()
+                    raise DecisionUnavailable("Resposta do Laya com tipo inválido (não é dict)")
                 if not data.get("ok", True):
                     self._record_failure()
                     raise DecisionUnavailable(f"Laya retornou ok=False: {data}")
-            except (ValueError, TypeError) as exc:
+            except DecisionUnavailable:
+                raise
+            except Exception as exc:
                 self._record_failure()
-                raise DecisionUnavailable("Resposta do Laya não é um JSON válido") from exc
+                raise DecisionUnavailable(f"Resposta do Laya não é um JSON válido ou está truncada: {exc}") from exc
 
             # Sucesso zera o contador e fecha o breaker
             self.reset_breaker()

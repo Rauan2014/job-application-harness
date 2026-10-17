@@ -85,7 +85,7 @@ def download_google_sheet(
     target.parent.mkdir(parents=True, exist_ok=True)
     export_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=xlsx"
 
-    # 1. Download direto via HTTP (para planilhas com acesso de leitura com link)
+    # 1. Download direto via HTTP (para planilhas com acesso de leitura com link) com retry
     try:
         try:
             import truststore
@@ -93,13 +93,25 @@ def download_google_sheet(
         except Exception:
             pass
         import httpx
+        import time
 
-        with httpx.Client(follow_redirects=True, timeout=30.0, verify=False) as client:
-            resp = client.get(export_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-            if resp.status_code == 200 and resp.content.startswith(b"PK\x03\x04"):
-                target.write_bytes(resp.content)
-                log.info("Planilha do Google Sheets baixada com sucesso (%d bytes): %s", len(resp.content), target)
-                return target
+        for attempt in range(3):
+            try:
+                with httpx.Client(follow_redirects=True, timeout=30.0, verify=False) as client:
+                    resp = client.get(export_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                    if resp.status_code == 200 and resp.content.startswith(b"PK\x03\x04"):
+                        target.write_bytes(resp.content)
+                        log.info("Planilha do Google Sheets baixada com sucesso (%d bytes): %s", len(resp.content), target)
+                        return target
+                    elif resp.status_code in (429, 500, 502, 503, 504) and attempt < 2:
+                        time.sleep(1.0 * (2 ** attempt))
+                        continue
+                    break
+            except (httpx.TransportError, httpx.TimeoutException):
+                if attempt < 2:
+                    time.sleep(1.0 * (2 ** attempt))
+                    continue
+                break
     except Exception as exc:
         log.debug("Download direto da planilha falhou (%s), tentando fallback com Google Drive API...", exc)
 
@@ -122,11 +134,13 @@ def download_google_sheet(
 
     if drive_service is not None:
         try:
+            from storage.drive_client import _execute_api_call_with_retry
+
             req = drive_service.files().export_media(
                 fileId=sheet_id,
                 mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-            data = req.execute()
+            data = _execute_api_call_with_retry(req.execute, f"exportar planilha '{sheet_id}' via Drive API")
             if isinstance(data, (bytes, bytearray)) and bytes(data).startswith(b"PK\x03\x04"):
                 target.write_bytes(bytes(data))
                 log.info("Planilha do Google Sheets exportada via Google Drive API: %s", target)

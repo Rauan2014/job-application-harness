@@ -390,3 +390,40 @@ Adicione em `tests/unit/` (todos sem rede/browser):
 2. `ruff check .` sem erros.
 3. `python main.py --limit 1 --backend rules` roda em dry-run sem exceção (com `data/vagas.csv` local).
 4. Relatório final ao usuário listando: tarefas feitas, tarefas puladas (com motivo) e arquivos com backup em `artifacts/backup/`.
+
+---
+
+## 9. Auditoria, Blindagem e Refatoração (Outubro/2026)
+
+Execução integral do plano de auditoria, correção de vulnerabilidades e refatoração em 5 fases sequenciais com validação contínua de testes.
+
+### Fase 1: Higiene de Repositório, Codificação e Documentação
+- [x] **Encoding UTF-8**: Corrigido docstring em `web/__init__.py` e garantido UTF-8 sem erros em todos os arquivos `.py`.
+- [x] **Eliminação de duplicação `OKF/`**: Removida a pasta raiz duplicada `OKF/`, mantendo a canônica em `docs/okf/` referenciada por `docs/OKF_SPECIFICATION.md` e `README.md`.
+- [x] **Unificação de dependências**: `pyproject.toml` atualizado com dependências completas do projeto (`fastapi`, `uvicorn`, etc.) e opcionais `[project.optional-dependencies]` para `dev` e `laya`. `requirements.txt` sincronizado.
+- [x] **Otimização de ativos**: Imagem `web/static/assets/brand_emblem.jpg` re-comprimida de 695 KB para ~74 KB (~90% de redução).
+- [x] **Script de inicialização Linux**: Criado `iniciar_painel.sh` com permissão executável (`chmod +x`), equivalente funcional ao `iniciar_painel.bat`.
+
+### Fase 2: Segurança e Blindagem da Camada Web
+- [x] **Proteção de segredos**: Mascaramento estrito de chaves de API (`LLM_API_KEY`) no endpoint `/api/config` e no retorno de `raw_env` (`••••••••`), com permissões restritas `0o600` em arquivos de credenciais/cookies em disco. `storage_state.json` incluído no `.gitignore`.
+- [x] **Hardening de API e Frontend**: Servidor restrito por padrão a conexões de `127.0.0.1` / `localhost` via CORS regex; validação de segurança contra Path Traversal em screenshots e seleção de planilhas; sanitização de URLs e links contra XSS em `web/static/app.js`.
+- [x] **Controle de concorrência**: Implementado `threading.Lock()` atômico em `web/runner.py` impedindo execuções concorrentes acidentais por múltiplos cliques rápidos na interface web, com cancelamento seguro via SIGTERM/SIGKILL.
+
+### Fase 3: Resiliência do Pipeline, Decisão e Integrações
+- [x] **Cliente Laya blindado**: Timeouts explícitos em todas as chamadas HTTP e captura defensiva de JSON malformado ou truncado em `core/decision/laya_client.py` com fallback seguro para `DecisionUnavailable`.
+- [x] **Google Drive e Sheets**: Tratamento de erros de rede transitórios e limites de taxa (HTTP 429 / 503) com retry e backoff exponencial em `storage/drive_client.py` e `storage/sheet_loader.py`.
+- [x] **Persistência segura em `sheet_writer.py`**: Proteção contra falhas de escrita e tratamento de `PermissionError` (arquivo aberto no Windows) com gravação em arquivo de fallback sem perda de dados na memória.
+- [x] **Leitura de PDF robusta**: `core/pdf_text.py` com tratamento de arquivos corrompidos, vazios ou protegidos por senha, lançando `PdfTextError` limpo sem abortar o pipeline.
+- [x] **Fila de vagas com concorrência e idempotência**: `core/queue_manager.py` com controle atômico `threading.Lock()` e rastreamento de IDs processados e em voo (`_processed_job_ids`, `_in_flight_job_ids`).
+
+### Fase 4: Estabilidade de Automação e Handlers
+- [x] **Ciclo de vida do navegador**: `BrowserManager` com rastreamento de contextos abertos (`_contexts`) e encerramento garantido de páginas e contextos em blocos `finally` e no método `stop()`.
+- [x] **Validação canônica de URLs**: Método estático `BaseATSHandler.validate_job_url(url)` integrado a `registry.py` e aos handlers, validando esquemas HTTP/HTTPS antes de qualquer navegação.
+- [x] **Correção do falso positivo em confirmação**: Em `BaseATSHandler._finalize`, verificação de `submit_still_active` (evita declarar confirmed se o botão de submit ainda está ativo na tela sem elementos de confirmação), além de ampliação do dicionário de palavras-chave de sucesso.
+- [x] **Substituição de timeouts fixos**: Esperas estáticas baseadas em `wait_for_timeout` substituídas por esperas reativas de estado de DOM (`wait_for(state='visible')`, `wait_for_selector`, `wait_for_load_state`) em `greenhouse.py`, `lever.py`, `workable.py` e `indeed.py`.
+
+### Fase 5: Consolidação de Testes e Limpeza de Scripts
+- [x] **Cobertura de testes para handlers**: Criados `tests/unit/test_lever_handler.py`, `tests/unit/test_greenhouse_handler.py` e `tests/unit/test_workable_handler.py` cobrindo `can_handle`, detecção de blockers (CAPTCHA), `inspect` e `fill_and_submit` (dry-run e missing fields).
+- [x] **Testes parametrizados de agregadores**: Casos de teste para portais Ashby (systemfield selectors), Quickin, Sólides (apply button) e Kognit consolidados em `tests/unit/test_aggregator_handler.py`.
+- [x] **Limpeza de `scripts/dev/`**: 13 scripts pontuais com URLs/dados hardcoded movidos para `scripts/dev/archive/`; utilitários ativos (`inspect_lever.py`, `test_gemini.py`, `test_single_job.py`, `test_captcha_vis.py`) documentados em `scripts/dev/README.md`.
+- [x] **Validação final da suíte**: Suíte completa de testes passando 100% sem regressões.

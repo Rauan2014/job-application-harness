@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
+import threading
 import time
 from typing import Any
 
@@ -42,6 +43,7 @@ class HarnessRunner:
     """Gerencia a execução ativa do harness, acompanhando progresso e emitindo SSE."""
 
     def __init__(self) -> None:
+        self._thread_lock = threading.Lock()
         self._lock = asyncio.Lock()
         self._task: asyncio.Task[None] | None = None
         self._subscribers: set[asyncio.Queue[dict[str, Any]]] = set()
@@ -130,8 +132,8 @@ class HarnessRunner:
 
     async def start(self, options: dict[str, Any]) -> dict[str, Any]:
         """Inicia uma nova rodada de execução em background se não estiver rodando."""
-        async with self._lock:
-            if self.is_running:
+        with self._thread_lock:
+            if self.is_running or (self._task is not None and not self._task.done()):
                 return {"success": False, "error": "A automação já está em execução."}
 
             self.status = "running"
@@ -155,27 +157,33 @@ class HarnessRunner:
             return {"success": True, "message": "Automação iniciada com sucesso!"}
 
     async def stop(self) -> dict[str, Any]:
-        """Cancela com segurança a execução ativa."""
-        async with self._lock:
+        """Cancela com segurança a execução ativa e libera subprocessos."""
+        with self._thread_lock:
             if not self.is_running or self._task is None:
                 return {"success": False, "error": "Nenhuma automação em execução no momento."}
 
             self.log("WARNING", "Solicitação de parada recebida. Encerrando processos...")
-            self._task.cancel()
+            task_to_cancel = self._task
             self.status = "cancelling"
             self.broadcast("status_change", self.get_status())
 
-            try:
-                await asyncio.wait_for(asyncio.shield(self._task), timeout=5.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
-                pass
+        task_to_cancel.cancel()
 
-            self.is_running = False
-            self.status = "cancelled"
-            self.end_time = time.perf_counter()
+        try:
+            await asyncio.wait_for(asyncio.shield(task_to_cancel), timeout=5.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+            pass
+        finally:
+            with self._thread_lock:
+                self.is_running = False
+                self.status = "cancelled"
+                self.end_time = time.perf_counter()
+                self._task = None
+                self.active_jobs.clear()
             self.broadcast("status_change", self.get_status())
             self.log("INFO", "Automação interrompida pelo usuário.")
-            return {"success": True, "message": "Automação parada com sucesso."}
+
+        return {"success": True, "message": "Automação parada com sucesso."}
 
     async def _execute_harness(self, options: dict[str, Any]) -> None:
         """Loop principal de execução integrando QueueManager e Pipeline."""
@@ -288,7 +296,16 @@ class HarnessRunner:
                         wait_timeout_s=15.0,
                     )
                     if laya_proc is not None:
-                        stack.callback(laya_proc.terminate)
+                        def _cleanup_proc(p):
+                            try:
+                                p.terminate()
+                                p.wait(timeout=2.0)
+                            except Exception:
+                                try:
+                                    p.kill()
+                                except Exception:
+                                    pass
+                        stack.callback(_cleanup_proc, laya_proc)
                     if is_up:
                         candidate_model = LayaSidecarClient(settings=settings)
                         stack.push_async_callback(candidate_model.aclose)
@@ -449,9 +466,11 @@ class HarnessRunner:
             self.status = "error"
             self.log("ERROR", f"Erro durante a execução: {type(exc).__name__}: {exc}")
         finally:
-            self.is_running = False
-            self.end_time = time.perf_counter()
-            self.active_jobs.clear()
+            with self._thread_lock:
+                self.is_running = False
+                self.end_time = time.perf_counter()
+                self.active_jobs.clear()
+                self._task = None
             self.broadcast("status_change", self.get_status())
 
 

@@ -143,6 +143,13 @@ def save_cookies(raw_data: str | list[dict] | dict) -> dict[str, Any]:
         storage_state["cookies"] = converted_cookies
 
     path.write_text(json.dumps(storage_state, indent=2, ensure_ascii=False), encoding="utf-8")
+    import os
+
+    if os.name == "posix":
+        try:
+            os.chmod(path, 0o600)
+        except Exception:
+            pass
     return get_cookies_info()
 
 

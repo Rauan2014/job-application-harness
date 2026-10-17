@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -68,6 +69,8 @@ class GreenhouseHandler(BaseATSHandler):
     selectors: GreenhouseSelectors = GreenhouseSelectors()
 
     def can_handle(self, job: Job) -> bool:
+        if not self.validate_job_url(job.url):
+            return False
         if job.ats and job.ats.lower() == "greenhouse":
             return True
         url = (job.url or "").lower()
@@ -290,26 +293,22 @@ class GreenhouseHandler(BaseATSHandler):
                 if "iti-" in cb_id or not await cb.is_visible():
                     continue
                 await cb.click()
-                await page.wait_for_timeout(300)
                 if "country" in cb_id:
                     await cb.fill("Brazil")
-                    await page.wait_for_timeout(400)
                 elif "school" in cb_id:
                     await cb.fill("Universidade")
-                    await page.wait_for_timeout(600)
                 elif "degree" in cb_id:
                     await cb.fill("Bachelor")
-                    await page.wait_for_timeout(400)
                 elif "discipline" in cb_id:
                     await cb.fill("Computer")
-                    await page.wait_for_timeout(400)
                 opt_loc = page.locator("[role='option'], div[class*='option']").first
+                with contextlib.suppress(Exception):
+                    await opt_loc.wait_for(state="visible", timeout=1500)
                 if await opt_loc.count() > 0 and await opt_loc.is_visible():
                     await opt_loc.click()
                 else:
                     await page.keyboard.press("ArrowDown")
                     await page.keyboard.press("Enter")
-                await page.wait_for_timeout(200)
 
             q_inputs = page.locator("input[id^='question_']:not([role='combobox'])")
             for qi in range(await q_inputs.count()):

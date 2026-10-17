@@ -39,7 +39,10 @@ def reset_registry() -> None:
 
 
 def get_handler(job: Job) -> BaseATSHandler | None:
-    """Retorna o handler apropriado para a vaga ou None se a ATS não for suportada."""
+    """Retorna o handler apropriado para a vaga ou None se a ATS não for suportada ou URL inválida."""
+    if not BaseATSHandler.validate_job_url(job.url):
+        logger.warning("URL de vaga ausente ou inválida para job '%s' (url=%s)", job.id, job.url)
+        return None
     for handler in _REGISTRY:
         if handler.can_handle(job):
             return handler
