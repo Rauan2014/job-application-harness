@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 try:
     import truststore
     truststore.inject_into_ssl()
@@ -48,6 +49,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=str,
         default=None,
         help="Caminho da planilha de vagas (.xlsx/.csv) ou URL/ID do Google Sheets.",
+    )
+    parser.add_argument(
+        "--from-supabase",
+        "--supabase",
+        dest="from_supabase",
+        action="store_true",
+        default=False,
+        help="Carrega as vagas pendentes diretamente do Supabase (substitui o Google Sheets de terceiros).",
+    )
+    parser.add_argument(
+        "--search",
+        type=str,
+        default=None,
+        help="Realiza busca nativa de vagas ao vivo pelo termo informado e enfileira para envio.",
     )
     parser.add_argument(
         "--include-blank-status",
@@ -218,50 +233,85 @@ async def run_harness(args: argparse.Namespace) -> int:
         logger.error("Erro ao ler JSON de perfil em '%s': %s", args.profile, exc)
         return 1
 
-    # 3. Determina a planilha de vagas (argumento CLI -> GOOGLE_SHEET_URL no .env -> data/vagas.xlsx)
-    sheet_input = args.sheet or settings.GOOGLE_SHEET_URL or "data/vagas.xlsx"
-    include_blank = settings.INCLUDE_BLANK_STATUS
+    # 3. Determina a fonte de vagas (Busca ao vivo -> Supabase -> Planilha)
+    jobs: list[Job] = []
+    supa_client: Any = None
+    use_supabase_sync = False
+    local_sheet_path: Path | None = None
+    sheet_input: str | None = None
 
-    if is_google_sheet_source(sheet_input):
-        logger.info("Detectada fonte do Google Sheets ('%s').", sheet_input)
+    search_query = getattr(args, "search", None)
+    from_supabase = getattr(args, "from_supabase", False)
+
+    if search_query:
+        from core.job_search import jobs_to_domain_models, search_jobs
+
+        logger.info("Realizando busca nativa de vagas ao vivo: query='%s'...", search_query)
+        raw_found = await search_jobs(query=search_query, limit=args.limit or 20)
+        jobs = jobs_to_domain_models(raw_found)
+        logger.info("%d vagas encontradas e enfileiradas para processamento.", len(jobs))
+
+    elif from_supabase or (not args.sheet and not settings.GOOGLE_SHEET_URL and (os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL"))):
+        from core.job_search import jobs_to_domain_models
+        from storage.supabase_client import SupabaseCloudClient
+
+        supa_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")
+        supa_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+        if supa_url and supa_key:
+            logger.info("Carregando vagas pendentes direto do Supabase (substituindo planilha)...")
+            supa_client = SupabaseCloudClient(supa_url, supa_key)
+            use_supabase_sync = True
+            raw_jobs = await supa_client.fetch_pending_jobs(limit=args.limit or 50)
+            jobs = jobs_to_domain_models(raw_jobs)
+            logger.info("%d vagas pendentes carregadas do Supabase.", len(jobs))
+        else:
+            logger.warning("Credenciais do Supabase ausentes no .env para --from-supabase.")
+
+    if not jobs:
+        # Fallback para planilha de vagas (.xlsx / Google Sheets)
+        sheet_input = args.sheet or settings.GOOGLE_SHEET_URL or "data/vagas.xlsx"
+        include_blank = settings.INCLUDE_BLANK_STATUS
+
+        if is_google_sheet_source(sheet_input):
+            logger.info("Detectada fonte do Google Sheets ('%s').", sheet_input)
+            try:
+                local_sheet_path = download_google_sheet(
+                    sheet_input,
+                    dest_path=Path("cache/vagas_sheets_latest.xlsx"),
+                    drive_service=None,
+                    service_account_file=settings.GOOGLE_SERVICE_ACCOUNT_FILE,
+                    oauth_client_file=settings.GOOGLE_OAUTH_CLIENT_FILE,
+                    token_file=settings.GOOGLE_TOKEN_FILE,
+                )
+            except Exception as exc:
+                logger.error("Erro ao baixar planilha do Google Sheets: %s", exc)
+                return 1
+        else:
+            local_sheet_path = Path(sheet_input)
+            if not local_sheet_path.exists():
+                logger.error("Planilha de vagas não encontrada em '%s'.", sheet_input)
+                return 1
+
+        retry_all = getattr(args, "retry_all", False)
+        include_review = retry_all or getattr(args, "include_review_status", False)
+        include_failed = retry_all or getattr(args, "include_failed", False)
+        include_blank = retry_all or include_blank
+
         try:
-            local_sheet_path = download_google_sheet(
-                sheet_input,
-                dest_path=Path("cache/vagas_sheets_latest.xlsx"),
+            jobs = load_jobs(
+                local_sheet_path,
+                only_todo=not retry_all,
+                include_blank=include_blank,
+                include_review=include_review,
+                include_failed=include_failed,
                 drive_service=None,
-                service_account_file=settings.GOOGLE_SERVICE_ACCOUNT_FILE,
-                oauth_client_file=settings.GOOGLE_OAUTH_CLIENT_FILE,
-                token_file=settings.GOOGLE_TOKEN_FILE,
             )
+            logger.info("%d vagas carregadas para processamento da planilha '%s'.", len(jobs), local_sheet_path)
         except Exception as exc:
-            logger.error("Erro ao baixar planilha do Google Sheets: %s", exc)
-            return 1
-    else:
-        local_sheet_path = Path(sheet_input)
-        if not local_sheet_path.exists():
-            logger.error("Planilha de vagas não encontrada em '%s'.", sheet_input)
+            logger.error("Erro ao carregar planilha de vagas: %s", exc)
             return 1
 
-    retry_all = getattr(args, "retry_all", False)
-    include_review = retry_all or getattr(args, "include_review_status", False)
-    include_failed = retry_all or getattr(args, "include_failed", False)
-    include_blank = retry_all or include_blank
-
-    try:
-        jobs = load_jobs(
-            local_sheet_path,
-            only_todo=not retry_all,
-            include_blank=include_blank,
-            include_review=include_review,
-            include_failed=include_failed,
-            drive_service=None,
-        )
-        logger.info("%d vagas carregadas para processamento da planilha '%s'.", len(jobs), local_sheet_path)
-    except Exception as exc:
-        logger.error("Erro ao carregar planilha de vagas: %s", exc)
-        return 1
-
-    if args.limit:
+    if args.limit and len(jobs) > args.limit:
         jobs = jobs[:args.limit]
         logger.info("Limite de execução aplicado: %d vagas selecionadas.", len(jobs))
 
@@ -365,73 +415,92 @@ async def run_harness(args: argparse.Namespace) -> int:
             if not results and queue_mgr.results:
                 results = list(queue_mgr.results)
 
-            # 9. Grava cópia dos resultados na planilha local
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            artifacts_dir = Path("artifacts")
-            await asyncio.to_thread(artifacts_dir.mkdir, parents=True, exist_ok=True)
-            copy_path = artifacts_dir / f"planilha_atualizada_{timestamp}.xlsx"
-
-            jobs_map = {j.id: j for j in jobs}
-            try:
-                out_sheet_path = write_results(
-                    source_path=local_sheet_path,
-                    results=results,
-                    out_path=copy_path,
-                    jobs=jobs_map,
-                )
-                if copy_path != settings.SHEET_RESULT_FILE:
-                    import shutil
-
-                    shutil.copy2(out_sheet_path, settings.SHEET_RESULT_FILE)
-            except Exception as exc:
-                logger.error("Erro ao gravar cópia da planilha com os resultados: %s", exc)
-                out_sheet_path = settings.SHEET_RESULT_FILE
-
-            # 10. Se a fonte for Google Sheets, sincroniza os resultados diretamente na planilha online
-            if is_google_sheet_source(sheet_input):
-                from storage.sheet_loader import extract_spreadsheet_id, find_header, read_raw
-                from storage.sheet_writer import update_google_sheet_results
-
-                spreadsheet_id = extract_spreadsheet_id(sheet_input)
-                if spreadsheet_id:
-                    logger.info(
-                        "Sincronizando status atualizados diretamente no Google Sheets online (%s)...",
-                        spreadsheet_id,
-                    )
+            # 9. Sincroniza resultados no Supabase se as vagas vieram de lá
+            if use_supabase_sync and supa_client:
+                logger.info("Sincronizando status atualizados no Supabase (job_applications)...")
+                for res in results:
+                    st_val = res.status.value if hasattr(res.status, "value") else str(res.status)
                     try:
-                        from storage.drive_client import build_sheets_service
-
-                        service_file = settings.GOOGLE_SERVICE_ACCOUNT_FILE
-                        oauth_file = settings.GOOGLE_OAUTH_CLIENT_FILE
-                        token_file = settings.GOOGLE_TOKEN_FILE
-                        sheets_svc = build_sheets_service(
-                            service_file,
-                            oauth_file if (oauth_file and oauth_file.exists()) else None,
-                            token_file=token_file,
-                            interactive=False,
+                        await supa_client.update_job_application(
+                            res.job_id,
+                            {
+                                "status": st_val,
+                                "review_reason": res.reason or None,
+                                "submitted_live": res.submitted,
+                                "dry_run": res.dry_run,
+                            },
                         )
+                    except Exception as err:
+                        logger.warning("Falha ao atualizar vaga %s no Supabase: %s", res.job_id, err)
 
-                        raw = read_raw(local_sheet_path)
-                        header_pos, columns = find_header(raw)
-                        header_row = raw.rows[header_pos][0]
+            # 10. Grava cópia dos resultados na planilha local se houver planilha de origem
+            if local_sheet_path is not None and local_sheet_path.exists():
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                artifacts_dir = Path("artifacts")
+                await asyncio.to_thread(artifacts_dir.mkdir, parents=True, exist_ok=True)
+                copy_path = artifacts_dir / f"planilha_atualizada_{timestamp}.xlsx"
 
-                        update_google_sheet_results(
-                            spreadsheet_id=spreadsheet_id,
-                            results=results,
-                            jobs=jobs_map,
-                            columns=columns,
-                            header_row=header_row,
-                            sheets_service=sheets_svc,
+                jobs_map = {j.id: j for j in jobs}
+                try:
+                    out_sheet_path = write_results(
+                        source_path=local_sheet_path,
+                        results=results,
+                        out_path=copy_path,
+                        jobs=jobs_map,
+                    )
+                    if copy_path != settings.SHEET_RESULT_FILE:
+                        import shutil
+
+                        shutil.copy2(out_sheet_path, settings.SHEET_RESULT_FILE)
+                except Exception as exc:
+                    logger.error("Erro ao gravar cópia da planilha com os resultados: %s", exc)
+                    out_sheet_path = settings.SHEET_RESULT_FILE
+
+                # Se a fonte for Google Sheets, sincroniza os resultados diretamente na planilha online
+                if sheet_input and is_google_sheet_source(sheet_input):
+                    from storage.sheet_loader import extract_spreadsheet_id, find_header, read_raw
+                    from storage.sheet_writer import update_google_sheet_results
+
+                    spreadsheet_id = extract_spreadsheet_id(sheet_input)
+                    if spreadsheet_id:
+                        logger.info(
+                            "Sincronizando status atualizados diretamente no Google Sheets online (%s)...",
+                            spreadsheet_id,
                         )
-                        print(f"[OK] Google Sheets online atualizado com sucesso! ({sheet_input})")
-                    except Exception as exc:
-                        logger.warning(
-                            "Não foi possível sincronizar no Google Sheets online: %s\n"
-                            "Para habilitar, ative a 'Google Sheets API' no Cloud Console e rode auth_google.py.\n"
-                            "A cópia local foi salva em: %s",
-                            exc,
-                            copy_path.resolve(),
-                        )
+                        try:
+                            from storage.drive_client import build_sheets_service
+
+                            service_file = settings.GOOGLE_SERVICE_ACCOUNT_FILE
+                            oauth_file = settings.GOOGLE_OAUTH_CLIENT_FILE
+                            token_file = settings.GOOGLE_TOKEN_FILE
+                            sheets_svc = build_sheets_service(
+                                service_file,
+                                oauth_file if (oauth_file and oauth_file.exists()) else None,
+                                token_file=token_file,
+                                interactive=False,
+                            )
+
+                            raw = read_raw(local_sheet_path)
+                            header_pos, columns = find_header(raw)
+                            header_row = raw.rows[header_pos][0]
+
+                            update_google_sheet_results(
+                                spreadsheet_id=spreadsheet_id,
+                                results=results,
+                                jobs=jobs_map,
+                                columns=columns,
+                                header_row=header_row,
+                                sheets_service=sheets_svc,
+                            )
+                            print(f"[OK] Google Sheets online atualizado com sucesso! ({sheet_input})")
+                        except Exception as exc:
+                            logger.warning(
+                                "Não foi possível sincronizar no Google Sheets online: %s\n"
+                                "Para habilitar, ative a 'Google Sheets API' no Cloud Console e rode auth_google.py.\n"
+                                "A cópia local foi salva em: %s",
+                                exc,
+                                copy_path.resolve(),
+                            )
 
             # 11. Exibe resumo no terminal
             _print_summary(queue_mgr.get_summary(), out_sheet_path)

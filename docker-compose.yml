@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: candidata-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./cache:/app/cache
+    # Limites estritos para rodar com folga na Hetzner CPX21 (3 vCPU / 4GB RAM)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.80'
+          memory: 3500M
+        reservations:
+          cpus: '0.50'
+          memory: 1024M
+    # Rotação de logs para não estourar o disco da VPS
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

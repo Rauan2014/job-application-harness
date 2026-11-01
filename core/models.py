@@ -21,10 +21,10 @@ class TaskStatus(StrEnum):
 
 
 class Job(BaseModel):
-    """Uma vaga lida da planilha."""
+    """Uma vaga lida da planilha ou obtida via busca no Supabase."""
 
     id: str
-    row_index: int
+    row_index: int = 1
     date: str = ""
     company: str
     title: str
@@ -38,6 +38,13 @@ class Job(BaseModel):
     stack: list[str] = Field(default_factory=list)
     sheet_status: str = ""
     language: Literal["pt", "en"] = "pt"
+    seniority: str | None = None
+    source_platform: str | None = None
+    external_job_id: str | None = None
+    posted_at: str | None = None
+    location: str | None = None
+    salary: str | None = None
+    notes: str | None = None
 
 
 class Profile(BaseModel):
