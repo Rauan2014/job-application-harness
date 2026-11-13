@@ -1518,11 +1518,15 @@ async function discoverJobsNow() {
     return;
   }
 
+  const originalBtnHtml = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Buscando vagas...';
+    const spanEl = btn.querySelector('span');
+    if (spanEl) spanEl.textContent = 'Buscando vagas...';
+    else btn.textContent = 'Buscando vagas...';
   }
   if (feedbackEl) {
+    feedbackEl.style.display = 'block';
     feedbackEl.textContent = `Consultando ${sources.join(', ')}...`;
   }
 
@@ -1535,7 +1539,10 @@ async function discoverJobsNow() {
     const data = await res.json();
     if (!data.success) {
       showToast(`Erro na busca: ${data.error || 'falha desconhecida'}`, 'danger');
-      if (feedbackEl) feedbackEl.textContent = data.error || 'Erro ao buscar vagas.';
+      if (feedbackEl) {
+        feedbackEl.style.display = 'block';
+        feedbackEl.textContent = data.error || 'Erro ao buscar vagas.';
+      }
       return;
     }
 
@@ -1544,17 +1551,23 @@ async function discoverJobsNow() {
         ? ` | Avisos: ${data.warnings.join(' ; ')}`
         : '';
     const msg = `${data.total_found || 0} vagas encontradas (${data.added || 0} novas na fila, total ${data.queue_total || 0}).${warnText}`;
-    if (feedbackEl) feedbackEl.textContent = msg;
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.textContent = msg;
+    }
     showToast(msg, 'success');
 
     await Promise.all([fetchJobs(), fetchResults()]);
   } catch (err) {
     showToast(`Erro ao buscar vagas: ${err.message}`, 'danger');
-    if (feedbackEl) feedbackEl.textContent = err.message;
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.textContent = err.message;
+    }
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Buscar Vagas Agora';
+      btn.innerHTML = originalBtnHtml;
     }
   }
 }
