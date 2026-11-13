@@ -249,13 +249,58 @@ class HarnessRunner:
             include_failed = retry_all or bool(options.get("include_failed", False))
             include_blank = retry_all or settings.INCLUDE_BLANK_STATUS
 
-            jobs = load_jobs(
-                local_sheet_path,
-                only_todo=not retry_all,
-                include_blank=include_blank,
-                include_review=include_review,
-                include_failed=include_failed,
+            from core.job_search import (
+                jobs_to_domain_models as discovered_to_jobs,
+                load_discovered_jobs,
+                update_discovered_job,
             )
+
+            discovered_raw = load_discovered_jobs(settings.DISCOVERED_JOBS_FILE)
+            discovered_jobs = discovered_to_jobs(discovered_raw)
+            discovered_ids = {j.id for j in discovered_jobs}
+
+            source_opt = str(options.get("source") or "").strip().lower()
+            requested_ids = options.get("job_ids") or []
+            only_discovered = source_opt == "discovered" or (
+                isinstance(requested_ids, list)
+                and bool(requested_ids)
+                and all(jid in discovered_ids for jid in requested_ids)
+            )
+
+            jobs: list[Job] = []
+            if only_discovered:
+                jobs = [
+                    j
+                    for j in discovered_jobs
+                    if retry_all
+                    or (j.sheet_status or "A Fazer").strip().lower() in ("a fazer", "")
+                    or (include_review and "revis" in (j.sheet_status or "").lower())
+                    or (include_failed and "falh" in (j.sheet_status or "").lower())
+                ]
+            else:
+                if local_sheet_path.exists():
+                    jobs = load_jobs(
+                        local_sheet_path,
+                        only_todo=not retry_all,
+                        include_blank=include_blank,
+                        include_review=include_review,
+                        include_failed=include_failed,
+                    )
+                if source_opt in ("", "all") and discovered_jobs:
+                    seen_urls = {(j.url or "").strip().rstrip("/") for j in jobs if j.url}
+                    for dj in discovered_jobs:
+                        norm_u = (dj.url or "").strip().rstrip("/")
+                        st_lower = (dj.sheet_status or "A Fazer").strip().lower()
+                        is_eligible = (
+                            retry_all
+                            or st_lower in ("a fazer", "")
+                            or (include_review and "revis" in st_lower)
+                            or (include_failed and "falh" in st_lower)
+                        )
+                        if is_eligible and (not norm_u or norm_u not in seen_urls):
+                            jobs.append(dj)
+                            if norm_u:
+                                seen_urls.add(norm_u)
 
             # Filtro por IDs específicos se solicitado
             job_ids = options.get("job_ids")
@@ -265,6 +310,12 @@ class HarnessRunner:
             limit = options.get("limit")
             if limit and int(limit) > 0:
                 jobs = jobs[: int(limit)]
+
+            # Proteção de conta: força concorrência 1 quando houver vagas do LinkedIn
+            has_linkedin = any("linkedin.com" in (j.url or "").lower() or (j.ats or "").lower() == "linkedin" for j in jobs)
+            if has_linkedin and settings.MAX_CONCURRENCY > 1:
+                settings.MAX_CONCURRENCY = 1
+                self.log("INFO", "Modo seguro LinkedIn ativado: concorrência ajustada para 1.")
 
             self.total_jobs = len(jobs)
             self.remaining_jobs = len(jobs)
@@ -369,6 +420,32 @@ class HarnessRunner:
                     self.run_completion_tokens += c_toks
 
                     screen_filename = result.screenshot_path.name if result.screenshot_path else None
+                    tailored_url = (
+                        f"/api/resumes/generated/{Path(job.tailored_resume_path).name}"
+                        if job.tailored_resume_path
+                        else None
+                    )
+                    if job.id in discovered_ids:
+                        new_sheet_st = "A Fazer"
+                        if result.status.value == "COMPLETED":
+                            new_sheet_st = "Candidatado" if result.submitted else "Pronta (Dry-Run)"
+                        elif result.status.value == "NEEDS_REVIEW":
+                            new_sheet_st = "Revisar"
+                        elif result.status.value == "FAILED":
+                            new_sheet_st = "Falhou"
+                        elif result.status.value == "SKIPPED":
+                            new_sheet_st = "Ignorada"
+                        with suppress(Exception):
+                            update_discovered_job(
+                                job.id,
+                                {
+                                    "sheet_status": new_sheet_st,
+                                    "tailored_resume_path": job.tailored_resume_path,
+                                    "matched_skills": job.matched_skills,
+                                },
+                                queue_path=settings.DISCOVERED_JOBS_FILE,
+                            )
+
                     item_dict = {
                         "job_id": result.job_id,
                         "company": job.company,
@@ -376,6 +453,8 @@ class HarnessRunner:
                         "status": result.status.value,
                         "reason": result.reason,
                         "resume_used": result.resume_used,
+                        "tailored_resume_url": tailored_url,
+                        "matched_skills": job.matched_skills,
                         "duration_s": result.duration_s,
                         "tokens_used": toks,
                         "prompt_tokens": p_toks,

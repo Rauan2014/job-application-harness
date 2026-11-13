@@ -162,6 +162,57 @@
           </div>
         </div>
 
+        <!-- Conexões 1-Clique & Radar de Busca de Vagas -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <div class="card-header" style="flex-wrap:wrap; gap:0.75rem;">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Conexão de Portais &amp; Coleta de Vagas
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+              <button type="button" id="btn-connect-linkedin" class="btn btn-secondary" onclick="connectPortal('linkedin')">
+                <span id="radar-dot-linkedin" class="badge-dot" style="background:var(--text-muted);"></span>
+                <strong>Conectar com LinkedIn</strong>
+                <span id="radar-status-linkedin" class="badge badge-neutral" style="margin-left:0.25rem; font-size:0.68rem;">Desconectado</span>
+              </button>
+              <button type="button" id="btn-connect-gupy" class="btn btn-secondary" onclick="connectPortal('gupy')">
+                <span id="radar-dot-gupy" class="badge-dot" style="background:var(--text-muted);"></span>
+                <strong>Conectar com Gupy</strong>
+                <span id="radar-status-gupy" class="badge badge-neutral" style="margin-left:0.25rem; font-size:0.68rem;">Desconectado</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+            <input id="discover-query" type="text" class="form-control" placeholder="Cargo ou stack (ex: Python, Full Stack, React)" style="flex:1; min-width:220px;" />
+            <input id="discover-location" type="text" class="form-control" placeholder="Localidade (ex: Brasil)" value="Brasil" style="width:160px;" />
+            <button type="button" id="btn-discover-jobs" class="btn btn-primary" onclick="discoverJobsNow()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Buscar &amp; Enfileirar Vagas</span>
+            </button>
+          </div>
+
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.75rem; font-size:0.78rem; color:var(--text-secondary);">
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-linkedin" />
+              <span>LinkedIn (via sessão conectada)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-gupy" />
+              <span>Gupy (via sessão conectada)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-ats-boards" checked />
+              <span>Boards ATS (Greenhouse, Lever, Ashby)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-open-feeds" checked />
+              <span>Feeds Abertos (GitHub BR / Jobicy)</span>
+            </label>
+          </div>
+          <div id="discover-feedback" style="display:none; font-size:0.78rem; margin-top:0.6rem; color:var(--mint);"></div>
+        </div>
+
         <!-- Grade de Métricas Principais (KPIs) -->
         <div class="kpi-grid">
           <!-- Card 1: Currículos Enviados -->
@@ -437,6 +488,14 @@
               <div id="cookies-portals-list" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.15rem;"></div>
 
               <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                  <button type="button" class="btn btn-secondary" style="justify-content:center;" onclick="connectPortal('linkedin')">
+                    <strong>Conectar com LinkedIn</strong>
+                  </button>
+                  <button type="button" class="btn btn-secondary" style="justify-content:center;" onclick="connectPortal('gupy')">
+                    <strong>Conectar com Gupy</strong>
+                  </button>
+                </div>
                 <button type="button" class="btn btn-secondary" style="justify-content:flex-start;" onclick="triggerVisualLogin()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                   <strong>Abrir Navegador para Login</strong> (1-Clique Visual)

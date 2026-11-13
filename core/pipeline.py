@@ -113,13 +113,54 @@ class Pipeline:
                 )
         return None
 
-    async def _resolve_resume(self, job: Job) -> ResumeInfo | None:
-        """Etapa 2: Resolução de currículo por label ou fallback DP2."""
+    async def _resolve_resume(self, job: Job, profile: Profile | None = None) -> ResumeInfo | None:
+        """Etapa 2: Resolução de currículo por PDF sob medida, label ou fallback DP2."""
+        # 0. Se já houver PDF sob medida pré-gerado para esta vaga, reutiliza diretamente
+        if job.tailored_resume_path:
+            pre_path = Path(job.tailored_resume_path)
+            if pre_path.exists():
+                try:
+                    from core.pdf_text import extract_text, summarize
+
+                    extracted = extract_text(pre_path)
+                    return ResumeInfo(path=pre_path, summary=summarize(extracted), text=extracted)
+                except Exception as exc:
+                    logger.warning("Falha ao ler PDF sob medida '%s': %s", pre_path, exc)
+
         resume_info: ResumeInfo | None = None
         try:
             resume_info = await self.resume_resolver.resolve(job)
         except Exception as exc:
             logger.warning("Falha ao resolver currículo para job %s: %s", job.id, exc)
+
+        # 1. Geração sob medida em ReportLab quando habilitada e sem PDF específico prévio
+        if (
+            resume_info is None
+            and getattr(self.settings, "TAILOR_RESUME_PER_JOB", False)
+            and profile is not None
+            and (profile.experiences or profile.projects or len(profile.skills) >= 2)
+            and (job.description or job.stack)
+        ):
+            try:
+                from core.resume_pdf import generate_tailored_pdf
+                from core.resume_tailor import ResumeTailor
+
+                tailor = ResumeTailor(self.settings, matcher=self.matcher)
+                spec = await tailor.build_spec(job, profile)
+                out_dir = getattr(self.settings, "GENERATED_RESUMES_DIR", Path("cache/resumes/generated"))
+                resume_info = generate_tailored_pdf(spec, profile, out_dir)
+                job.tailored_resume_path = str(resume_info.path)
+                job.matched_skills = list(spec.matched_skills)
+                logger.info(
+                    "Currículo sob medida gerado para job %s (%s): %s [skills=%s]",
+                    job.id,
+                    job.company,
+                    resume_info.path.name,
+                    ", ".join(spec.matched_skills[:5]),
+                )
+                return resume_info
+            except Exception as exc:
+                logger.warning("Falha ao gerar currículo sob medida para job %s: %s", job.id, exc)
 
         if resume_info is None:
             base_resumes = self.resume_resolver.get_base_resumes(job.base_used)
@@ -375,7 +416,7 @@ class Pipeline:
 
         # ---------------------------------------------------------------- Etapa 2: Currículo (DP2)
         await _emit_step("Resolvendo currículo compatível")
-        resume_info = await self._resolve_resume(job)
+        resume_info = await self._resolve_resume(job, profile=profile)
         if resume_info is None:
             logger.warning("Currículo não encontrado para job %s (label=%s)", job.id, job.resume_label)
             res = ApplicationResult(

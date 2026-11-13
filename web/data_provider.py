@@ -125,8 +125,53 @@ def _detect_ats_label(job: Job) -> str:
 
 
 def get_jobs_cache() -> list[dict[str, Any]]:
-    """Carrega lista de vagas disponíveis da planilha local ou de cache."""
+    """Carrega lista de vagas da fila local descoberta (`discovered_jobs.json`) e da planilha ativa."""
     settings = load_settings()
+    combined: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    seen_urls: set[str] = set()
+
+    # 1. Fila local de vagas descobertas
+    from core.job_search import load_discovered_jobs
+
+    discovered = load_discovered_jobs(settings.DISCOVERED_JOBS_FILE)
+    for idx, d in enumerate(discovered, start=1):
+        jid = str(d.get("id") or d.get("external_job_id") or f"disc-{idx}")
+        jurl = str(d.get("job_url") or d.get("url") or "").strip()
+        tailored_path = d.get("tailored_resume_path")
+        tailored_url = (
+            f"/api/resumes/generated/{Path(tailored_path).name}"
+            if tailored_path and Path(tailored_path).name
+            else None
+        )
+        norm_url = jurl.rstrip("/")
+        if jid in seen_ids or (norm_url and norm_url in seen_urls):
+            continue
+        seen_ids.add(jid)
+        if norm_url:
+            seen_urls.add(norm_url)
+        combined.append(
+            {
+                "id": jid,
+                "row_index": idx,
+                "date": d.get("job_date") or d.get("date") or "",
+                "company": d.get("company") or "Empresa",
+                "title": d.get("title") or "Cargo",
+                "modality": d.get("modality") or "100% Remoto",
+                "url": jurl or None,
+                "ats": d.get("ats") or "Portal Direto",
+                "fit_score": d.get("fit_score"),
+                "resume_label": Path(tailored_path).name if tailored_path else d.get("resume_label"),
+                "sheet_status": d.get("sheet_status") or "A Fazer",
+                "language": d.get("language") or "pt",
+                "source_platform": d.get("source_platform") or "discovered",
+                "tailored_resume_path": tailored_path,
+                "tailored_resume_url": tailored_url,
+                "matched_skills": d.get("matched_skills") or [],
+            }
+        )
+
+    # 2. Planilha local / Google Sheets
     refreshed_path = refresh_sheet_cache(force_download=False)
     sheet_candidates = [
         refreshed_path,
@@ -142,7 +187,7 @@ def get_jobs_cache() -> list[dict[str, Any]]:
             break
 
     if not sheet_path:
-        return []
+        return combined
 
     try:
         jobs = load_jobs(
@@ -153,26 +198,37 @@ def get_jobs_cache() -> list[dict[str, Any]]:
             include_failed=True,
             include_completed=True,
         )
-        return [
-            {
-                "id": j.id,
-                "row_index": j.row_index,
-                "date": j.date,
-                "company": j.company,
-                "title": j.title,
-                "modality": j.modality,
-                "url": j.url,
-                "ats": _detect_ats_label(j),
-                "fit_score": j.fit_score,
-                "resume_label": j.resume_label,
-                "sheet_status": j.sheet_status or "A Fazer",
-                "language": j.language,
-            }
-            for j in jobs
-        ]
+        for j in jobs:
+            norm_url = (j.url or "").strip().rstrip("/")
+            if j.id in seen_ids or (norm_url and norm_url in seen_urls):
+                continue
+            seen_ids.add(j.id)
+            if norm_url:
+                seen_urls.add(norm_url)
+            combined.append(
+                {
+                    "id": j.id,
+                    "row_index": j.row_index,
+                    "date": j.date,
+                    "company": j.company,
+                    "title": j.title,
+                    "modality": j.modality,
+                    "url": j.url,
+                    "ats": _detect_ats_label(j),
+                    "fit_score": j.fit_score,
+                    "resume_label": j.resume_label,
+                    "sheet_status": j.sheet_status or "A Fazer",
+                    "language": j.language,
+                    "source_platform": j.source_platform or "sheet",
+                    "tailored_resume_path": j.tailored_resume_path,
+                    "tailored_resume_url": None,
+                    "matched_skills": j.matched_skills or [],
+                }
+            )
+        return combined
     except Exception as exc:
         logger.warning("Falha ao carregar vagas da planilha '%s': %s", sheet_path, exc)
-        return []
+        return combined
 
 
 def _entry_from_sheet_job(job: dict[str, Any]) -> dict[str, Any]:
@@ -220,6 +276,9 @@ def _entry_from_sheet_job(job: dict[str, Any]) -> dict[str, Any]:
         "dry_run": dry_run,
         "submitted": submitted,
         "resume_used": job.get("resume_label") or "Padrão",
+        "tailored_resume_url": job.get("tailored_resume_url"),
+        "matched_skills": job.get("matched_skills") or [],
+        "source_platform": job.get("source_platform"),
         "duration_s": None,
         "tokens_used": 0,
         "prompt_tokens": 0,
@@ -301,6 +360,13 @@ def get_results_history(limit: int = 500, deduplicate: bool = True) -> list[dict
                 elif raw_status == TaskStatus.SKIPPED.value:
                     display_status = "Ignorada / Descartada"
 
+                resume_used_val = data.get("resume_used") or job_meta.get("resume_label") or "Padrão"
+                tailored_url = job_meta.get("tailored_resume_url")
+                if not tailored_url and resume_used_val and str(resume_used_val).lower().endswith(".pdf"):
+                    gen_candidate = settings.GENERATED_RESUMES_DIR / Path(str(resume_used_val)).name
+                    if gen_candidate.exists():
+                        tailored_url = f"/api/resumes/generated/{gen_candidate.name}"
+
                 entry = {
                     "job_id": job_id,
                     "company": job_meta.get("company") or _extract_company_from_id(job_id),
@@ -312,7 +378,10 @@ def get_results_history(limit: int = 500, deduplicate: bool = True) -> list[dict
                     "reason": data.get("reason"),
                     "dry_run": is_dry_run,
                     "submitted": is_submitted,
-                    "resume_used": data.get("resume_used") or job_meta.get("resume_label") or "Padrão",
+                    "resume_used": resume_used_val,
+                    "tailored_resume_url": tailored_url,
+                    "matched_skills": job_meta.get("matched_skills") or [],
+                    "source_platform": job_meta.get("source_platform"),
                     "duration_s": data.get("duration_s"),
                     "tokens_used": data.get("tokens_used", 0) or 0,
                     "prompt_tokens": data.get("prompt_tokens", 0) or 0,

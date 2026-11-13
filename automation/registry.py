@@ -7,8 +7,10 @@ import logging
 from automation.base_handler import BaseATSHandler
 from automation.handlers.aggregator import AggregatorHandler
 from automation.handlers.greenhouse import GreenhouseHandler
+from automation.handlers.gupy import GupyHandler
 from automation.handlers.indeed import IndeedApplyHandler
 from automation.handlers.lever import LeverHandler
+from automation.handlers.linkedin import LinkedInHandler
 from automation.handlers.workable import WorkableHandler
 from core.models import Job
 
@@ -18,6 +20,8 @@ _DEFAULT_HANDLERS: list[BaseATSHandler] = [
     LeverHandler(),
     GreenhouseHandler(),
     WorkableHandler(),
+    GupyHandler(),
+    LinkedInHandler(),
     IndeedApplyHandler(),
     AggregatorHandler(),
 ]

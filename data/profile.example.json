@@ -4,6 +4,7 @@
   "phone": "+55 11 99999-9999",
   "location": "São Paulo, SP, Brasil",
   "headline": "Engenheira de Software Full Stack",
+  "summary": "Engenheira de Software com 5 anos de experiência construindo APIs em Python/FastAPI, aplicações web em React/TypeScript e pipelines containerizados em PostgreSQL e Docker.",
   "links": {
     "linkedin": "https://linkedin.com/in/fulanadetal",
     "github": "https://github.com/fulanadetal"
@@ -18,6 +19,29 @@
     "PostgreSQL",
     "Docker"
   ],
+  "experiences": [
+    {
+      "company": "Empresa Exemplo",
+      "role": "Engenheira de Software Sênior",
+      "period": "2023 - Atual",
+      "location": "Remoto",
+      "highlights": [
+        "Arquitetou APIs assíncronas em Python e FastAPI reduzindo latência p95 em 35%.",
+        "Liderou migração de frontend para React + TypeScript com cobertura de testes E2E."
+      ],
+      "skills": ["Python", "FastAPI", "React", "TypeScript", "PostgreSQL", "Docker"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Plataforma Open-Source de Automação",
+      "url": "https://github.com/fulanadetal/projeto",
+      "description": "Motor assíncrono em Python e Playwright com fila transacional e geração de relatórios.",
+      "skills": ["Python", "Docker", "PostgreSQL"]
+    }
+  ],
+  "languages": ["Português (Nativo)", "Inglês (Avançado)"],
+  "certifications": [],
   "base_answers": {
     "years_python": "5 anos",
     "english_level": "Avançado / Fluente",

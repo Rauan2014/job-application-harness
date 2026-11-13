@@ -81,6 +81,16 @@ class Settings(BaseSettings):
     MIN_FIT_SCORE: int = 70
     FIT_GATE_ENABLED: bool = True
     RESUME_MATCH_THRESHOLD: float = 0.9
+    TAILOR_RESUME_PER_JOB: bool = True
+    GENERATED_RESUMES_DIR: Path = Path("./cache/resumes/generated")
+
+    # --- descoberta de vagas e portais ---
+    DISCOVERED_JOBS_FILE: Path = Path("./cache/discovered_jobs.json")
+    TARGET_GREENHOUSE_BOARDS: list[str] = Field(default_factory=list)
+    TARGET_LEVER_BOARDS: list[str] = Field(default_factory=list)
+    TARGET_ASHBY_BOARDS: list[str] = Field(default_factory=list)
+    LINKEDIN_DAILY_LIMIT: int = 15
+    LINKEDIN_SEARCH_LOCATION: str = "Brasil"
 
     # --- decisão ---
     DECISION_BACKEND: Literal["laya", "rules"] = "laya"
@@ -165,12 +175,14 @@ class Settings(BaseSettings):
     def ensure_dirs(self) -> None:
         """Cria sob demanda os diretórios de cache e artefatos."""
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        self.GENERATED_RESUMES_DIR.mkdir(parents=True, exist_ok=True)
         self.SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
         for file_path in (
             self.RESULTS_FILE,
             self.SHEET_RESULT_FILE,
             self.LAYA_EVAL_FILE,
             self.DECISION_AUDIT_FILE,
+            self.DISCOVERED_JOBS_FILE,
         ):
             file_path.parent.mkdir(parents=True, exist_ok=True)
 

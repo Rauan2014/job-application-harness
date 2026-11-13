@@ -45,6 +45,28 @@ class Job(BaseModel):
     location: str | None = None
     salary: str | None = None
     notes: str | None = None
+    tailored_resume_path: str | None = None
+    matched_skills: list[str] = Field(default_factory=list)
+
+
+class ExperienceItem(BaseModel):
+    """Experiência profissional verificada do candidato (para currículo sob medida)."""
+
+    company: str
+    role: str
+    period: str
+    location: str | None = None
+    highlights: list[str] = Field(default_factory=list)
+    skills: list[str] = Field(default_factory=list)
+
+
+class ProjectItem(BaseModel):
+    """Projeto relevante verificado do candidato (para currículo sob medida)."""
+
+    name: str
+    url: str | None = None
+    description: str
+    skills: list[str] = Field(default_factory=list)
 
 
 class Profile(BaseModel):
@@ -59,11 +81,16 @@ class Profile(BaseModel):
     salary_expectation: str | None = None
     skills: list[str] = Field(default_factory=list)
     headline: str | None = None
+    summary: str | None = None
     current_company: str | None = None
     education_school: str | None = None
     education_degree: str | None = None
     education_level: str | None = None
     graduation_year: str | None = None
+    experiences: list[ExperienceItem] = Field(default_factory=list)
+    projects: list[ProjectItem] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    languages: list[str] = Field(default_factory=list)
     cover_letter_pt: str | None = None
     cover_letter_en: str | None = None
     base_answers: dict[str, str] = Field(default_factory=dict)

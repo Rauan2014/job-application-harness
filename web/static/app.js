@@ -701,9 +701,17 @@ function renderResultsTable() {
           </span>
         </td>
         <td onclick="event.stopPropagation()">
-          <div style="display:flex; gap:0.4rem;">
+          <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
             <button class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="openJobDetailsModal('${escapeHtml(item.job_id)}')">
               Detalhes
+            </button>
+            ${
+              item.tailored_resume_url
+                ? `<a href="${sanitizeUrl(item.tailored_resume_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem; text-decoration:none; border-color:rgba(16,185,129,0.45); color:var(--accent-success);" title="Abrir currículo PDF gerado para esta vaga">CV PDF</a>`
+                : `<button class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="tailorResumeForJob('${escapeHtml(item.job_id)}')" title="Gerar currículo ATS em PDF adaptado para esta vaga">Gerar CV</button>`
+            }
+            <button class="btn btn-secondary" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="runSingleJob('${escapeHtml(item.job_id)}', true)" title="Executar simulação (dry-run) desta vaga">
+              Simular
             </button>
             ${
               item.screenshot_url
@@ -879,6 +887,11 @@ function openJobDetailsModal(jobId) {
         <div class="detail-card">
           <div class="detail-label">Currículo Utilizado</div>
           <div class="detail-val-mono">${escapeHtml(item.resume_used || 'Padrão')}</div>
+          ${
+            item.tailored_resume_url
+              ? `<div style="margin-top:0.45rem;"><a href="${sanitizeUrl(item.tailored_resume_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.75rem; text-decoration:none; color:var(--accent-success);">Visualizar PDF Gerado</a></div>`
+              : `<div style="margin-top:0.45rem;"><button class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="tailorResumeForJob('${escapeHtml(item.job_id)}', true)">Gerar PDF Sob Medida</button></div>`
+          }
         </div>
 
         <div class="detail-card">
@@ -900,6 +913,15 @@ function openJobDetailsModal(jobId) {
         <p style="font-size:0.85rem; color:var(--text-pure); margin-top:0.3rem; line-height:1.5;">
           ${escapeHtml(item.reason || 'Processamento sem ocorrências registradas.')}
         </p>
+        ${
+          Array.isArray(item.matched_skills) && item.matched_skills.length > 0
+            ? `<div style="margin-top:0.75rem;"><div class="detail-label" style="margin-bottom:0.35rem;">Skills Verificadas em Destaque</div><div style="display:flex; flex-wrap:wrap; gap:0.35rem;">${item.matched_skills.map((s) => `<span class="badge badge-info">${escapeHtml(s)}</span>`).join('')}</div></div>`
+            : ''
+        }
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.85rem;">
+          <button class="btn btn-secondary" style="font-size:0.78rem;" onclick="tailorResumeForJob('${escapeHtml(item.job_id)}', true)">Regerar CV em PDF</button>
+          <button class="btn btn-primary" style="font-size:0.78rem;" onclick="closeJobDetailsModal(); runSingleJob('${escapeHtml(item.job_id)}', true);">Simular Candidatura (Dry Run)</button>
+        </div>
       </div>
 
       <div class="detail-grid">
@@ -1347,6 +1369,31 @@ function renderCookiesUI() {
       portalsEl.innerHTML = '';
     }
   }
+
+  // Sincronizar badges da aba Radar (LinkedIn / Gupy)
+  const portals = c.portals || {};
+  _syncRadarPortalBadge('linkedin', portals.linkedin, 'src-linkedin');
+  _syncRadarPortalBadge('gupy', portals.gupy, 'src-gupy');
+}
+
+function _syncRadarPortalBadge(portal, info, checkboxId) {
+  const dot = document.getElementById(`radar-dot-${portal}`);
+  const text = document.getElementById(`radar-status-${portal}`);
+  const checkbox = document.getElementById(checkboxId);
+  const connected = Boolean(info && info.connected);
+
+  if (dot) {
+    dot.style.background = connected ? 'var(--accent-success)' : 'var(--accent-warning)';
+  }
+  if (text) {
+    text.textContent = connected
+      ? `Conectado (${info.cookie_count || 0} cookies)`
+      : 'Desconectado';
+    text.style.color = connected ? 'var(--accent-success)' : 'var(--text-muted)';
+  }
+  if (checkbox && connected && !checkbox.dataset.userToggled) {
+    checkbox.checked = true;
+  }
 }
 
 function openPasteCookiesModal() {
@@ -1414,6 +1461,151 @@ function closeLoginChoiceModal() {
   if (modal) modal.classList.remove('active');
 }
 
+let _portalPollTimer = null;
+
+async function connectPortal(portal) {
+  const label = portal === 'linkedin' ? 'LinkedIn' : portal === 'gupy' ? 'Gupy' : portal;
+  showToast(`Abrindo ${label} no Camoufox (auto-detecção de login ativada)...`, 'info');
+
+  try {
+    const res = await fetch(`/api/cookies/connect/${encodeURIComponent(portal)}`, {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(`Falha ao abrir ${label}: ${data.error || 'erro desconhecido'}`, 'danger');
+      return;
+    }
+
+    showToast(
+      `Faça login no ${label} na janela aberta. A sessão será salva automaticamente.`,
+      'success'
+    );
+
+    if (_portalPollTimer) clearInterval(_portalPollTimer);
+    let attempts = 0;
+    _portalPollTimer = setInterval(async () => {
+      attempts += 1;
+      await fetchCookies();
+      const connected = state.cookies?.portals?.[portal]?.connected;
+      if (connected || attempts >= 40) {
+        clearInterval(_portalPollTimer);
+        _portalPollTimer = null;
+        if (connected) {
+          showToast(`${label} conectado e cookies salvos!`, 'success');
+        }
+      }
+    }, 3000);
+  } catch (err) {
+    showToast(`Erro ao conectar ${label}: ${err.message}`, 'danger');
+  }
+}
+
+async function discoverJobsNow() {
+  const btn = document.getElementById('btn-discover-jobs');
+  const feedbackEl = document.getElementById('discover-feedback');
+  const query = (document.getElementById('discover-query')?.value || 'desenvolvedor').trim();
+  const location = (document.getElementById('discover-location')?.value || 'Brasil').trim();
+
+  const sources = [];
+  if (document.getElementById('src-linkedin')?.checked) sources.push('linkedin');
+  if (document.getElementById('src-gupy')?.checked) sources.push('gupy');
+  if (document.getElementById('src-ats-boards')?.checked) sources.push('ats_boards');
+  if (document.getElementById('src-open-feeds')?.checked) sources.push('open_feeds');
+
+  if (sources.length === 0) {
+    showToast('Selecione ao menos uma fonte de busca.', 'warning');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Buscando vagas...';
+  }
+  if (feedbackEl) {
+    feedbackEl.textContent = `Consultando ${sources.join(', ')}...`;
+  }
+
+  try {
+    const res = await fetch('/api/jobs/discover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, location, limit: 25, sources }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(`Erro na busca: ${data.error || 'falha desconhecida'}`, 'danger');
+      if (feedbackEl) feedbackEl.textContent = data.error || 'Erro ao buscar vagas.';
+      return;
+    }
+
+    const warnText =
+      Array.isArray(data.warnings) && data.warnings.length > 0
+        ? ` | Avisos: ${data.warnings.join(' ; ')}`
+        : '';
+    const msg = `${data.total_found || 0} vagas encontradas (${data.added || 0} novas na fila, total ${data.queue_total || 0}).${warnText}`;
+    if (feedbackEl) feedbackEl.textContent = msg;
+    showToast(msg, 'success');
+
+    await Promise.all([fetchJobs(), fetchResults()]);
+  } catch (err) {
+    showToast(`Erro ao buscar vagas: ${err.message}`, 'danger');
+    if (feedbackEl) feedbackEl.textContent = err.message;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Buscar Vagas Agora';
+    }
+  }
+}
+
+async function tailorResumeForJob(jobId, reopenModal = false) {
+  showToast('Gerando currículo ATS em PDF adaptado para esta vaga...', 'info');
+  try {
+    const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/tailor-resume`, {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(`Falha ao gerar PDF: ${data.error || 'erro'}`, 'danger');
+      return;
+    }
+    showToast(`Currículo gerado: ${data.filename}`, 'success');
+    await Promise.all([fetchJobs(), fetchResults()]);
+    if (reopenModal) {
+      openJobDetailsModal(jobId);
+    }
+  } catch (err) {
+    showToast(`Erro ao gerar currículo: ${err.message}`, 'danger');
+  }
+}
+
+async function runSingleJob(jobId, dryRun = true) {
+  showToast(
+    dryRun ? 'Iniciando simulação para esta vaga...' : 'Iniciando candidatura...',
+    'info'
+  );
+  try {
+    const res = await fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dry_run: dryRun,
+        source: 'all',
+        job_ids: [jobId],
+      }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(`Não foi possível iniciar: ${data.error || 'erro'}`, 'danger');
+      return;
+    }
+    showToast('Execução iniciada! Acompanhe no Dashboard.', 'success');
+  } catch (err) {
+    showToast(`Erro ao iniciar vaga: ${err.message}`, 'danger');
+  }
+}
+
 async function startPortalLogin(url) {
   if (!url) return;
   closeLoginChoiceModal();
@@ -1429,6 +1621,7 @@ async function startPortalLogin(url) {
     const data = await res.json();
     if (data.success) {
       showToast('Navegador aberto! Faça login e feche a janela ao terminar.', 'success');
+      setTimeout(fetchCookies, 5000);
     } else {
       showToast(`Falha ao abrir navegador: ${data.error}`, 'danger');
     }

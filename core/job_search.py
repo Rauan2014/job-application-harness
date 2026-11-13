@@ -12,10 +12,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import datetime
+import html as html_lib
+import json
 import logging
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -336,31 +339,340 @@ async def fetch_remote_us_jobs(limit: int = 15, query: str = "") -> list[dict[st
     return found[:limit]
 
 
-async def search_jobs(query: str = "", market: str = "all", limit: int = 25) -> list[dict[str, Any]]:
-    """Agrega busca entre múltiplos mercados (BR, EUA, Global)."""
+DEFAULT_GREENHOUSE_BOARDS: tuple[str, ...] = ("nubank", "mercadolibre", "stone", "brex", "gitlab")
+DEFAULT_LEVER_BOARDS: tuple[str, ...] = ("netlify", "figma")
+DEFAULT_ASHBY_BOARDS: tuple[str, ...] = ("linear", "supabase")
+
+
+def _clean_html_text(raw: str) -> str:
+    txt = html_lib.unescape(raw or "")
+    txt = re.sub(r"<[^>]+>", " ", txt)
+    return re.sub(r"\s+", " ", txt).strip()
+
+
+def _matches_query(query: str, *fields: str) -> bool:
+    if not query or not query.strip():
+        return True
+    q = query.strip().lower()
+    terms = [t for t in re.split(r"[\s,]+", q) if len(t) >= 2]
+    combined = " ".join(fields).lower()
+    if q in combined:
+        return True
+    return any(t in combined for t in terms) if terms else True
+
+
+def compute_dynamic_fit_score(job: dict[str, Any], candidate_skills: list[str] | None = None) -> int:
+    """Calcula Fit Score (40-98) cruzando skills do candidato com título, stack e descrição."""
+    if not candidate_skills:
+        return int(job.get("fit_score") or 85)
+    from core.resume_tailor import normalize_skill
+
+    text = f"{job.get('title', '')} {' '.join(job.get('stack') or [])} {job.get('description', '')}".lower()
+    matched = 0
+    for skill in candidate_skills:
+        norm = normalize_skill(skill)
+        if not norm:
+            continue
+        pattern = r"(?<![a-z0-9])" + re.escape(norm) + r"(?![a-z0-9])"
+        if re.search(pattern, text) or norm in text:
+            matched += 1
+
+    if matched == 0:
+        return 55
+    ratio = matched / min(len(candidate_skills), 6)
+    return min(98, max(65, int(65 + ratio * 33)))
+
+
+async def fetch_greenhouse_boards(
+    boards: list[str] | tuple[str, ...] | None = None,
+    query: str = "",
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Consulta API pública de boards Greenhouse (`boards-api.greenhouse.io`)."""
+    targets = list(boards) if boards else list(DEFAULT_GREENHOUSE_BOARDS)
+    found: list[dict[str, Any]] = []
+
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        for slug in targets:
+            slug_clean = slug.strip().lower()
+            if not slug_clean:
+                continue
+            url = f"https://boards-api.greenhouse.io/v1/boards/{slug_clean}/jobs?content=true"
+            try:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                for item in data.get("jobs", []):
+                    title = str(item.get("title") or "")
+                    content = _clean_html_text(str(item.get("content") or ""))
+                    loc = str((item.get("location") or {}).get("name") or "Remoto")
+                    if not _matches_query(query, title, content, loc):
+                        continue
+                    job_url = str(item.get("absolute_url") or "")
+                    if not job_url:
+                        continue
+                    company = slug_clean.capitalize()
+                    found.append(
+                        {
+                            "title": title,
+                            "company": company,
+                            "job_url": job_url,
+                            "ats": "Greenhouse",
+                            "modality": "100% Remoto" if "remot" in f"{title} {loc}".lower() else "Híbrido / Presencial",
+                            "stack": [s for s in (query.split() if query else [])[:4]],
+                            "seniority": detect_seniority(title, content),
+                            "source_platform": "greenhouse_board",
+                            "external_job_id": f"gh-{slug_clean}-{item.get('id', '')}",
+                            "posted_at": item.get("updated_at") or datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                            "job_date": format_brazilian_date(),
+                            "resume_label": f"Currículo Otimizado - {company}",
+                            "base_used": ["Base Inglês"] if "engineer" in title.lower() else ["Base Português"],
+                            "description": content[:2000],
+                            "location": loc,
+                            "market": "us" if "united states" in loc.lower() else "br",
+                        }
+                    )
+                    if len(found) >= limit:
+                        return found
+            except Exception as exc:
+                logger.debug("Falha ao consultar board Greenhouse '%s': %s", slug_clean, exc)
+
+    return found[:limit]
+
+
+async def fetch_lever_boards(
+    boards: list[str] | tuple[str, ...] | None = None,
+    query: str = "",
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Consulta API pública de boards Lever (`api.lever.co`)."""
+    targets = list(boards) if boards else list(DEFAULT_LEVER_BOARDS)
+    found: list[dict[str, Any]] = []
+
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        for slug in targets:
+            slug_clean = slug.strip().lower()
+            if not slug_clean:
+                continue
+            url = f"https://api.lever.co/v0/postings/{slug_clean}?mode=json"
+            try:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+                items = resp.json()
+                if not isinstance(items, list):
+                    continue
+                for item in items:
+                    title = str(item.get("text") or "")
+                    desc = _clean_html_text(str(item.get("descriptionPlain") or item.get("description") or ""))
+                    cats = item.get("categories") or {}
+                    loc = str(cats.get("location") or "Remoto")
+                    if not _matches_query(query, title, desc, loc):
+                        continue
+                    job_url = str(item.get("hostedUrl") or item.get("applyUrl") or "")
+                    if not job_url:
+                        continue
+                    company = slug_clean.capitalize()
+                    found.append(
+                        {
+                            "title": title,
+                            "company": company,
+                            "job_url": job_url,
+                            "ats": "Lever",
+                            "modality": "100% Remoto" if "remot" in f"{title} {loc} {cats.get('commitment', '')}".lower() else "A Definir",
+                            "stack": [],
+                            "seniority": detect_seniority(title, desc),
+                            "source_platform": "lever_board",
+                            "external_job_id": f"lever-{slug_clean}-{item.get('id', '')}",
+                            "posted_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                            "job_date": format_brazilian_date(),
+                            "resume_label": f"Resume Optimized - {company}",
+                            "base_used": ["Base Inglês"],
+                            "description": desc[:2000],
+                            "location": loc,
+                            "market": "us",
+                        }
+                    )
+                    if len(found) >= limit:
+                        return found
+            except Exception as exc:
+                logger.debug("Falha ao consultar board Lever '%s': %s", slug_clean, exc)
+
+    return found[:limit]
+
+
+async def fetch_ashby_boards(
+    boards: list[str] | tuple[str, ...] | None = None,
+    query: str = "",
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Consulta API pública de boards Ashby (`api.ashbyhq.com/posting-api/job-board/{slug}`)."""
+    targets = list(boards) if boards else list(DEFAULT_ASHBY_BOARDS)
+    found: list[dict[str, Any]] = []
+
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        for slug in targets:
+            slug_clean = slug.strip().lower()
+            if not slug_clean:
+                continue
+            url = f"https://api.ashbyhq.com/posting-api/job-board/{slug_clean}"
+            try:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                for item in data.get("jobs", []):
+                    title = str(item.get("title") or "")
+                    desc = _clean_html_text(str(item.get("descriptionPlain") or item.get("descriptionHtml") or ""))
+                    loc = str(item.get("location") or ("Remoto" if item.get("isRemote") else "A Definir"))
+                    if not _matches_query(query, title, desc, loc):
+                        continue
+                    job_url = str(item.get("jobUrl") or item.get("applyUrl") or "")
+                    if not job_url:
+                        continue
+                    company = slug_clean.capitalize()
+                    found.append(
+                        {
+                            "title": title,
+                            "company": company,
+                            "job_url": job_url,
+                            "ats": "Ashby",
+                            "modality": "100% Remoto" if item.get("isRemote") or "remot" in loc.lower() else "Híbrido / Presencial",
+                            "stack": [],
+                            "seniority": detect_seniority(title, desc),
+                            "source_platform": "ashby_board",
+                            "external_job_id": f"ashby-{slug_clean}-{item.get('id', '')}",
+                            "posted_at": item.get("publishedAt") or datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                            "job_date": format_brazilian_date(),
+                            "resume_label": f"Resume Optimized - {company}",
+                            "base_used": ["Base Inglês"],
+                            "description": desc[:2000],
+                            "location": loc,
+                            "market": "us",
+                        }
+                    )
+                    if len(found) >= limit:
+                        return found
+            except Exception as exc:
+                logger.debug("Falha ao consultar board Ashby '%s': %s", slug_clean, exc)
+
+    return found[:limit]
+
+
+async def search_jobs(
+    query: str = "",
+    market: str = "all",
+    limit: int = 25,
+    sources: list[str] | None = None,
+    greenhouse_boards: list[str] | None = None,
+    lever_boards: list[str] | None = None,
+    ashby_boards: list[str] | None = None,
+    candidate_skills: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Agrega busca entre múltiplos mercados (BR, EUA, Global) e boards públicos ATS."""
     jobs: list[dict[str, Any]] = []
     tasks = []
+    active_sources = set(sources) if sources else {"open_feeds"}
 
-    if market in ("br", "all"):
-        tasks.append(fetch_brazil_tech_jobs(limit=limit, query=query))
-    if market in ("us", "all"):
-        tasks.append(fetch_remote_us_jobs(limit=limit, query=query))
+    if "open_feeds" in active_sources:
+        if market in ("br", "all"):
+            tasks.append(fetch_brazil_tech_jobs(limit=limit, query=query))
+        if market in ("us", "all"):
+            tasks.append(fetch_remote_us_jobs(limit=limit, query=query))
+
+    if "ats_boards" in active_sources:
+        tasks.append(fetch_greenhouse_boards(boards=greenhouse_boards, query=query, limit=limit))
+        tasks.append(fetch_lever_boards(boards=lever_boards, query=query, limit=limit))
+        tasks.append(fetch_ashby_boards(boards=ashby_boards, query=query, limit=limit))
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
     for res in results:
         if isinstance(res, list):
             jobs.extend(res)
 
-    # Deduplicação por job_url
-    seen = set()
-    deduped = []
+    # Deduplicação por job_url normalizada + cálculo de Fit Score
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
     for j in jobs:
-        url = j.get("job_url", "")
-        if url and url not in seen:
-            seen.add(url)
+        raw_url = str(j.get("job_url") or "").strip()
+        norm_url = raw_url.rstrip("/").split("?")[0] if raw_url else ""
+        if raw_url and norm_url not in seen:
+            seen.add(norm_url)
+            if candidate_skills:
+                j["fit_score"] = compute_dynamic_fit_score(j, candidate_skills)
             deduped.append(j)
 
+    deduped.sort(key=lambda item: int(item.get("fit_score") or 0), reverse=True)
     return deduped[:limit]
+
+
+# ---------------------------------------------------------------------------
+# Fila Local de Vagas Descobertas (cache/discovered_jobs.json)
+# ---------------------------------------------------------------------------
+
+
+def load_discovered_jobs(queue_path: Path = Path("cache/discovered_jobs.json")) -> list[dict[str, Any]]:
+    """Carrega a fila local de vagas descobertas."""
+    if not queue_path.exists():
+        return []
+    try:
+        data = json.loads(queue_path.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
+    except Exception as exc:
+        logger.warning("Falha ao ler fila local '%s': %s", queue_path, exc)
+        return []
+
+
+def save_discovered_jobs(jobs: list[dict[str, Any]], queue_path: Path = Path("cache/discovered_jobs.json")) -> None:
+    """Persiste a fila local de vagas descobertas."""
+    queue_path.parent.mkdir(parents=True, exist_ok=True)
+    queue_path.write_text(json.dumps(jobs, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def merge_discovered_jobs(
+    new_jobs: list[dict[str, Any]],
+    queue_path: Path = Path("cache/discovered_jobs.json"),
+) -> tuple[list[dict[str, Any]], int]:
+    """Mescla novas vagas descobertas na fila local evitando duplicatas por URL."""
+    existing = load_discovered_jobs(queue_path)
+    by_url = {
+        str(j.get("job_url") or "").strip().rstrip("/"): j
+        for j in existing
+        if j.get("job_url")
+    }
+    added = 0
+    for idx, j in enumerate(new_jobs, start=1):
+        url_key = str(j.get("job_url") or "").strip().rstrip("/")
+        if not url_key or url_key in by_url:
+            continue
+        record = dict(j)
+        record.setdefault("id", record.get("external_job_id") or f"disc-{len(existing) + added + idx}")
+        record.setdefault("sheet_status", "A Fazer")
+        existing.insert(0, record)
+        by_url[url_key] = record
+        added += 1
+
+    save_discovered_jobs(existing, queue_path)
+    return existing, added
+
+
+def update_discovered_job(
+    job_id: str,
+    updates: dict[str, Any],
+    queue_path: Path = Path("cache/discovered_jobs.json"),
+) -> dict[str, Any] | None:
+    """Atualiza metadados (ex.: status, tailored_resume_path, matched_skills) de uma vaga da fila local."""
+    items = load_discovered_jobs(queue_path)
+    updated_item: dict[str, Any] | None = None
+    for item in items:
+        if str(item.get("id") or item.get("external_job_id")) == str(job_id):
+            item.update(updates)
+            updated_item = item
+            break
+    if updated_item is not None:
+        save_discovered_jobs(items, queue_path)
+    return updated_item
 
 
 def jobs_to_domain_models(raw_jobs: list[dict[str, Any]]) -> list[Job]:
@@ -372,7 +684,7 @@ def jobs_to_domain_models(raw_jobs: list[dict[str, Any]]) -> list[Job]:
         lang = "en" if (resume_lbl and "resume" in str(resume_lbl).lower()) or any("ingles" in str(b).lower() for b in base_used) else "pt"
 
         job = Job(
-            id=r.get("external_job_id") or f"searched-{idx}",
+            id=str(r.get("id") or r.get("external_job_id") or f"searched-{idx}"),
             row_index=idx,
             date=r.get("job_date") or format_brazilian_date(),
             company=r.get("company", "Empresa"),
@@ -385,13 +697,16 @@ def jobs_to_domain_models(raw_jobs: list[dict[str, Any]]) -> list[Job]:
             resume_label=resume_lbl,
             base_used=base_used,
             stack=r.get("stack") or [],
-            sheet_status="A Fazer",
-            language=lang,
+            sheet_status=r.get("sheet_status") or "A Fazer",
+            language=r.get("language") or lang,
             seniority=r.get("seniority"),
             source_platform=r.get("source_platform"),
             external_job_id=r.get("external_job_id"),
             posted_at=r.get("posted_at"),
+            location=r.get("location"),
             salary=r.get("salary"),
+            tailored_resume_path=r.get("tailored_resume_path"),
+            matched_skills=r.get("matched_skills") or [],
         )
         domain_jobs.append(job)
     return domain_jobs
