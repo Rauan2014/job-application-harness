@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "loaded": true,
+  "degraded": false,
+  "calls": 12,
+  "failures": 0,
+  "checkpoints": {
+    "multilingual": {
+      "device": "cuda",
+      "max_len": 2048,
+      "head_max_len": 512,
+      "fitted_temperature_buckets": 0
+    }
+  }
+}

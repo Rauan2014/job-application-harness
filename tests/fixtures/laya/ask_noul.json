@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "answers": {
+    "q1": {
+      "question_id": "q1",
+      "type": "noul",
+      "noul": 0.85,
+      "band": "yes",
+      "confidence": 0.85,
+      "act_probability": 0.12
+    }
+  },
+  "model": "multilingual",
+  "latency_ms": 35.2,
+  "truncated": null,
+  "device": "cuda",
+  "degraded": false
+}

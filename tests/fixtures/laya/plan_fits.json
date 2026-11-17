@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "checkpoint": "multilingual",
+  "max_len": 2048,
+  "head_max_len": 512,
+  "fits": true,
+  "questions": [
+    {
+      "question_id": "q1",
+      "type": "noul",
+      "option_count": 2,
+      "options_compressed": false,
+      "would_truncate_state": false
+    }
+  ],
+  "state_chars": 350,
+  "warnings": []
+}
