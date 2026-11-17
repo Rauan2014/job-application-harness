@@ -1,0 +1,54 @@
+"""Registro central de handlers de ATS suportados pelo harness."""
+
+from __future__ import annotations
+
+import logging
+
+from automation.base_handler import BaseATSHandler
+from automation.handlers.aggregator import AggregatorHandler
+from automation.handlers.greenhouse import GreenhouseHandler
+from automation.handlers.gupy import GupyHandler
+from automation.handlers.indeed import IndeedApplyHandler
+from automation.handlers.lever import LeverHandler
+from automation.handlers.linkedin import LinkedInHandler
+from automation.handlers.workable import WorkableHandler
+from core.models import Job
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_HANDLERS: list[BaseATSHandler] = [
+    LeverHandler(),
+    GreenhouseHandler(),
+    WorkableHandler(),
+    GupyHandler(),
+    LinkedInHandler(),
+    IndeedApplyHandler(),
+    AggregatorHandler(),
+]
+
+_REGISTRY: list[BaseATSHandler] = list(_DEFAULT_HANDLERS)
+
+
+def register_handler(handler: BaseATSHandler) -> None:
+    """Registra um novo handler ou substitui existente com mesmo nome."""
+    global _REGISTRY
+    _REGISTRY = [h for h in _REGISTRY if h.name != handler.name]
+    _REGISTRY.append(handler)
+
+
+def reset_registry() -> None:
+    """Restaura o registro padrão de handlers."""
+    global _REGISTRY
+    _REGISTRY = list(_DEFAULT_HANDLERS)
+
+
+def get_handler(job: Job) -> BaseATSHandler | None:
+    """Retorna o handler apropriado para a vaga ou None se a ATS não for suportada ou URL inválida."""
+    if not BaseATSHandler.validate_job_url(job.url):
+        logger.warning("URL de vaga ausente ou inválida para job '%s' (url=%s)", job.id, job.url)
+        return None
+    for handler in _REGISTRY:
+        if handler.can_handle(job):
+            return handler
+    logger.warning("Nenhum handler de ATS encontrado para job '%s' (ats=%s, url=%s)", job.id, job.ats, job.url)
+    return None
