@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Candidata IA — Async Automation Harness & Telemetry</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
+  <link rel="stylesheet" href="/static/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar Superior -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-emblem-wrap">
+          <img src="/static/assets/logo.svg" alt="Candidata Emblem" />
+        </div>
+        <div class="brand-title">
+          <h1>CANDIDATA <span class="brand-badge">HARNESS</span></h1>
+          <p>Async Orchestration &amp; Decision Telemetry</p>
+        </div>
+      </div>
+
+      <nav class="nav-center" aria-label="Navegação do Painel">
+        <button class="nav-tab active" data-target="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="m12 12 7-7"/>
+          </svg>
+          <span>Radar</span>
+        </button>
+        <button class="nav-tab" data-target="jobs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>Candidaturas</span>
+        </button>
+        <button class="nav-tab" data-target="config">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>
+          </svg>
+          <span>Configurações</span>
+        </button>
+        <button class="nav-tab" data-target="screenshots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
+          <span>Evidências</span>
+          <span id="tab-badge-screenshots" class="brand-badge" style="display:none; font-size:0.62rem; padding:0.05rem 0.38rem;">0</span>
+        </button>
+        <button class="nav-tab" data-target="design-system">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/>
+          </svg>
+          <span>Design System</span>
+        </button>
+      </nav>
+
+      <div class="nav-actions">
+        <div id="header-status-pill" class="status-pill status-idle">
+          <span class="badge-dot"></span> PRONTO
+        </div>
+
+        <div class="nav-utils">
+          <button id="btn-toggle-sound" class="btn-icon sound-toggle-btn active" title="Alerta sonoro ao concluir ou solicitar revisão" onclick="toggleSoundAlert()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+          <button class="btn-icon" title="Ver / Ocultar Guia Rápido" onclick="toggleGuideBanner()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+          </button>
+          <button id="btn-toggle-theme" class="btn-icon" title="Alternar Modo de Contraste">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+        </div>
+
+        <button id="btn-start-automation" class="btn btn-primary" onclick="openRunModal()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          <span>Executar Pipeline</span>
+        </button>
+        <button id="btn-stop-automation" class="btn btn-danger" onclick="stopAutomation()" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
+          <span>Parar Execução</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="content">
+      <!-- ===================================================================
+           ABA 1: RADAR DE OPERAÇÃO & AO VIVO
+           =================================================================== -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- Guia Rápido de 3 Passos (Onboarding Não-Técnico) -->
+        <div id="guide-banner" class="guide-banner">
+          <div class="guide-header">
+            <div class="guide-title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+              Fluxo Rápido de Execução (3 Passos)
+            </div>
+            <button class="modal-close" style="font-size:1.1rem; line-height:1;" onclick="dismissGuideBanner()" title="Ocultar Guia">&times;</button>
+          </div>
+          <div class="guide-steps-grid">
+            <div class="guide-step-card" onclick="switchTab('config')" style="cursor:pointer;" title="Clique para ir às Configurações">
+              <div class="guide-step-num">1</div>
+              <div class="guide-step-text">
+                <h4>Configurar Chave & Sessão</h4>
+                <p>Valide sua chave de IA e conecte suas contas no Indeed, Gupy ou LinkedIn.</p>
+              </div>
+            </div>
+            <div class="guide-step-card" onclick="openRunModal()" style="cursor:pointer;" title="Clique para abrir opções de execução">
+              <div class="guide-step-num">2</div>
+              <div class="guide-step-text">
+                <h4>Disparar em Simulação (Dry-Run)</h4>
+                <p>Preenche formulários sem enviar de verdade para auditar respostas com segurança.</p>
+              </div>
+            </div>
+            <div class="guide-step-card" onclick="switchTab('jobs')" style="cursor:pointer;" title="Clique para ver candidaturas">
+              <div class="guide-step-num">3</div>
+              <div class="guide-step-text">
+                <h4>Acompanhar & Exportar Planilha</h4>
+                <p>Veja qual currículo foi usado, tokens consumidos e exporte relatório em CSV.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flight Deck Banner -->
+        <div class="hud-banner">
+          <div class="progress-header">
+            <div class="progress-title">
+              <span class="sonar-dot"></span>
+              <span>Telemetria de Execução:</span>
+              <span id="hud-progress-pct" class="progress-title-percent">0%</span>
+            </div>
+            <div style="display:flex; gap:1.25rem; align-items:center; flex-wrap:wrap;">
+              <div id="hud-live-timer" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--cyan); display:flex; gap:0.6rem;">
+                <span>Tempo: <strong id="hud-timer-val">00:00:00</strong></span>
+                <span id="hud-eta-val" style="color:var(--text-muted);">&bull; ETA: Aguardando</span>
+              </div>
+              <div id="hud-progress-stats" class="progress-stats">
+                0 concluídas de 0 vagas (0 restantes)
+              </div>
+            </div>
+          </div>
+
+          <div class="progress-bar-bg">
+            <div id="hud-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+
+          <!-- Onde a IA está agora (Navegadores Ativos) -->
+          <div style="margin-top: 1.15rem;">
+            <div style="font-family:var(--font-mono); font-size:0.72rem; font-weight:600; color:var(--text-muted); letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.4rem;">
+              WORKERS DE NAVEGAÇÃO ATIVOS
+            </div>
+            <div id="hud-active-jobs" class="active-jobs-list">
+              <div style="font-size:0.825rem; color:var(--text-muted); padding:0.4rem 0;">
+                Nenhum worker de navegador ativo. Clique em "Executar Pipeline" para iniciar a fila.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visor Neural Ao Vivo (Laya Web Navigator) -->
+        <section id="laya-live-card" class="laya-live-card">
+          <div class="laya-live-head">
+            <div class="laya-live-title-wrap">
+              <span id="laya-live-dot" class="laya-live-dot"></span>
+              <h3 style="margin:0; font-size:0.98rem;">Visor Neural Ao Vivo — Laya Web Navigator</h3>
+              <span id="laya-live-engine" class="laya-engine-pill">Aguardando execução</span>
+            </div>
+            <div class="laya-live-controls">
+              <label class="laya-check-inline">
+                <input id="laya-demo-headed" type="checkbox" />
+                <span>Abrir janela do navegador</span>
+              </label>
+              <button
+                id="btn-laya-demo"
+                type="button"
+                class="btn-laya-demo"
+                onclick="startLayaVisualDemo()"
+              >
+                Testar Demo Visual (Sandbox)
+              </button>
+            </div>
+          </div>
+
+          <div class="laya-real-bar">
+            <select
+              id="laya-real-job-select"
+              class="laya-real-select"
+              title="Escolha uma vaga real carregada (planilha, descobertas ou Supabase)"
+              onchange="onLayaRealSelectChange()"
+            >
+              <option value="">-- Selecionar vaga real da fila ou colar URL --</option>
+            </select>
+            <input
+              id="laya-real-url-input"
+              type="url"
+              class="laya-real-input"
+              placeholder="Ou cole a URL direta de qualquer vaga real (https://...)"
+            />
+            <label class="laya-check-inline" title="Quando marcado, preenche tudo sem clicar no envio final">
+              <input id="laya-real-dryrun" type="checkbox" checked />
+              <span>Dry-Run (seguro)</span>
+            </label>
+            <label class="laya-check-inline" title="Ignora handlers fixos e deixa a Laya navegar qualquer portal">
+              <input id="laya-real-force-generic" type="checkbox" />
+              <span>Forçar Laya</span>
+            </label>
+            <button
+              id="btn-laya-real-run"
+              type="button"
+              class="btn-laya-real"
+              onclick="startLayaRealJob()"
+            >
+              Assistir Vaga Real
+            </button>
+          </div>
+
+          <div class="laya-live-grid">
+            <div class="laya-viewport-shell">
+              <div class="laya-url-bar">
+                <span id="laya-live-job" style="color:var(--mint); font-weight:600;">Sandbox / Fila</span>
+                <span>·</span>
+                <span id="laya-live-url" class="laya-url-text">about:blank</span>
+              </div>
+              <div class="laya-frame-box">
+                <img id="laya-live-img" alt="Viewport ao vivo da Laya navegando" />
+                <div id="laya-live-placeholder" class="laya-placeholder">
+                  <strong>Nenhuma transmissão ativa no momento.</strong><br />
+                  Clique em <em>Testar Demo Visual (Sandbox)</em> para assistir a Laya identificando botões,
+                  preenchendo um formulário em 2 etapas sem seletores fixos e escalando decisões para o System 2 ao vivo —
+                  ou ative <em>Modo Visual Ao Vivo</em> ao iniciar uma execução real.
+                </div>
+              </div>
+            </div>
+
+            <div class="laya-telemetry-shell">
+              <div class="laya-stat-row">
+                <div class="laya-stat-chip s1">
+                  <strong id="laya-live-s1">0</strong>
+                  <span>System 1 (Laya)</span>
+                </div>
+                <div class="laya-stat-chip s2">
+                  <strong id="laya-live-s2">0</strong>
+                  <span>System 2 (LLM)</span>
+                </div>
+                <div class="laya-stat-chip eeo">
+                  <strong id="laya-live-eeo">0</strong>
+                  <span>Escudo EEO / Regras</span>
+                </div>
+              </div>
+              <div id="laya-live-feed" class="laya-feed">
+                <div class="laya-feed-item">
+                  <div class="laya-feed-meta"><span>SISTEMA PRONTO</span><span>—</span></div>
+                  <div>As decisões semânticas, escudos LGPD/EEO e cliques destacados aparecerão aqui em tempo real.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Conexões 1-Clique & Radar de Busca de Vagas -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <div class="card-header" style="flex-wrap:wrap; gap:0.75rem;">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Conexão de Portais &amp; Coleta de Vagas
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+              <button type="button" id="btn-connect-linkedin" class="btn btn-secondary" onclick="connectPortal('linkedin')">
+                <span id="radar-dot-linkedin" class="badge-dot" style="background:var(--text-muted);"></span>
+                <strong>Conectar com LinkedIn</strong>
+                <span id="radar-status-linkedin" class="badge badge-neutral" style="margin-left:0.25rem; font-size:0.68rem;">Desconectado</span>
+              </button>
+              <button type="button" id="btn-connect-gupy" class="btn btn-secondary" onclick="connectPortal('gupy')">
+                <span id="radar-dot-gupy" class="badge-dot" style="background:var(--text-muted);"></span>
+                <strong>Conectar com Gupy</strong>
+                <span id="radar-status-gupy" class="badge badge-neutral" style="margin-left:0.25rem; font-size:0.68rem;">Desconectado</span>
+              </button>
+              <button type="button" id="btn-radar-sync-supabase" class="btn btn-secondary" onclick="syncSupabaseJobsNow()" title="Sincronizar fila local e Radar diretamente com public.job_applications no Supabase">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                <span>Sincronizar Supabase</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+            <input id="discover-query" type="text" class="form-control" placeholder="Cargo ou stack (ex: Python, Full Stack, React)" style="flex:1; min-width:220px;" />
+            <input id="discover-location" type="text" class="form-control" placeholder="Localidade (ex: Brasil)" value="Brasil" style="width:160px;" />
+            <button type="button" id="btn-discover-jobs" class="btn btn-primary" onclick="discoverJobsNow()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Buscar &amp; Enfileirar Vagas</span>
+            </button>
+          </div>
+
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.75rem; font-size:0.78rem; color:var(--text-secondary);">
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-linkedin" />
+              <span>LinkedIn (via sessão conectada)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-gupy" />
+              <span>Gupy (via sessão conectada)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-ats-boards" checked />
+              <span>Boards ATS (Greenhouse, Lever, Ashby)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="src-open-feeds" checked />
+              <span>Feeds Abertos (GitHub BR / Jobicy)</span>
+            </label>
+          </div>
+          <div id="discover-feedback" style="display:none; font-size:0.78rem; margin-top:0.6rem; color:var(--mint);"></div>
+        </div>
+
+        <!-- Grid de Vagas Encontradas & Fila Ativa do Radar -->
+        <div id="radar-jobs-card" class="card" style="margin-bottom: 1.25rem;">
+          <div class="card-header" style="flex-wrap:wrap; gap:0.75rem;">
+            <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap;">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                Vagas Encontradas &amp; Fila do Radar
+              </div>
+              <span id="radar-jobs-count" class="badge badge-info">0 vagas</span>
+              <span id="radar-supabase-badge" class="badge badge-neutral" style="display:none;">Supabase Sync</span>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+              <input
+                id="radar-jobs-search"
+                type="text"
+                class="form-control"
+                placeholder="Filtrar vagas (empresa, cargo, stack)..."
+                style="width:235px;"
+                oninput="handleRadarJobsFilter()"
+              />
+              <select id="radar-jobs-filter" class="form-control" style="width:auto;" onchange="handleRadarJobsFilter()">
+                <option value="all">Todas</option>
+                <option value="todo">Na Fila (A Fazer)</option>
+                <option value="supabase">No Supabase</option>
+                <option value="done">Concluídas / Revisão</option>
+              </select>
+              <button type="button" class="btn btn-secondary" onclick="switchTab('jobs')">Ver Histórico</button>
+            </div>
+          </div>
+          <div id="radar-jobs-grid" class="jobs-grid">
+            <div style="grid-column:1/-1; text-align:center; padding:1.75rem; color:var(--text-muted);">
+              Carregando vagas descobertas e fila ativa...
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade de Métricas Principais (KPIs) -->
+        <div class="kpi-grid">
+          <!-- Card 1: Currículos Enviados -->
+          <div class="kpi-card has-tooltip" data-tooltip="Total de formulários com currículo anexado. Em simulação protegida (Dry-Run), o clique final de submissão não é efetuado.">
+            <div class="kpi-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+              Currículos Enviados
+            </div>
+            <div id="kpi-resumes-sent" class="kpi-value">0 reais</div>
+            <div id="kpi-resumes-sub" class="kpi-subtext">+ 0 em simulação protegida</div>
+          </div>
+
+          <!-- Card 2: Tempo da IA -->
+          <div class="kpi-card has-tooltip" data-tooltip="Tempo médio de resposta dos navegadores e da IA para analisar e preencher cada formulário.">
+            <div class="kpi-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Latência do Motor
+            </div>
+            <div id="kpi-time-total" class="kpi-value">0s</div>
+            <div id="kpi-time-sub" class="kpi-subtext">Média: 0.0s por formulário</div>
+          </div>
+
+          <!-- Card 3: Tokens Gastos -->
+          <div class="kpi-card has-tooltip" style="color:var(--cyan);" data-tooltip="Tokens de IA consumidos no Gemini/OpenAI para responder perguntas dissertativas do formulário.">
+            <div class="kpi-label" style="color:var(--cyan);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M20 9h2"/><path d="M20 15h2"/><path d="M2 9h2"/><path d="M2 15h2"/></svg>
+              Tokens LLM Consumidos
+            </div>
+            <div id="kpi-tokens-total" class="kpi-value" style="color:var(--cyan);">0</div>
+            <div id="kpi-tokens-sub" class="kpi-subtext">0 entrada / 0 saída</div>
+          </div>
+
+          <!-- Card 4: Revisão Humana -->
+          <div class="kpi-card has-tooltip" style="color:var(--amber);" data-tooltip="Vagas pausadas quando a IA encontra CAPTCHA ou perguntas de autodeclaração sensíveis (EEO).">
+            <div class="kpi-label" style="color:var(--amber);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+              Checkpoint Humano
+            </div>
+            <div id="kpi-review-total" class="kpi-value" style="color:var(--amber);">0 vagas</div>
+            <div id="kpi-review-sub" class="kpi-subtext">Pausadas para verificação ética</div>
+          </div>
+
+          <!-- Card 5: Falhas e Erros -->
+          <div class="kpi-card has-tooltip" style="color:var(--crimson);" data-tooltip="Formulários com timeout, link quebrado ou rejeitados pelo filtro prévio de palavras-chave.">
+            <div class="kpi-label" style="color:var(--crimson);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+              Falhas Transitórias
+            </div>
+            <div id="kpi-failed-total" class="kpi-value" style="color:var(--crimson);">0 erros</div>
+            <div id="kpi-failed-sub" class="kpi-subtext">0 vagas descartadas no filtro</div>
+          </div>
+        </div>
+
+        <!-- Terminal de Logs Tático -->
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap; gap:0.75rem;">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+              Console de Operações em Tempo Real
+            </div>
+            <div class="console-toolbar">
+              <button class="console-tool-btn" onclick="copyConsoleLogs()" title="Copiar logs para área de transferência">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                Copiar
+              </button>
+              <button class="console-tool-btn" onclick="clearConsoleLogs()" title="Limpar histórico visível do console">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                Limpar
+              </button>
+              <button id="btn-toggle-autoscroll" class="console-tool-btn active" onclick="toggleAutoScroll()" title="Pausar ou retomar a rolagem automática">
+                Auto-Scroll
+              </button>
+              <button id="btn-toggle-log-filter" class="console-tool-btn" onclick="toggleLogSeverityFilter()" title="Filtrar apenas avisos e erros">
+                Avisos & Erros
+              </button>
+            </div>
+          </div>
+          <div id="terminal-logs" class="terminal-card"></div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ABA 2: CANDIDATURAS & HISTÓRICO
+           =================================================================== -->
+      <section id="tab-jobs" class="tab-pane">
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+                Histórico Consolidado de Candidaturas
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted);">
+                Auditoria completa de currículos anexados, tokens utilizados e tempo de preenchimento.
+              </p>
+            </div>
+
+            <!-- Filtros e Busca -->
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
+              <div class="search-input-wrap">
+                <input
+                  id="input-search-jobs"
+                  type="text"
+                  class="form-control"
+                  placeholder="Filtrar por empresa, cargo, currículo... (/)"
+                  style="width: 250px;"
+                  oninput="handleSearch(this.value)"
+                />
+                <button id="btn-clear-search" class="search-clear-btn" onclick="clearSearch()" title="Limpar busca">&times;</button>
+              </div>
+
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button class="btn btn-secondary filter-pill active" data-status="all" onclick="setFilterStatus('all')">
+                  Todas <span id="count-filter-all" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="PENDING" onclick="setFilterStatus('PENDING')">
+                  Na Fila <span id="count-filter-pending" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="COMPLETED" onclick="setFilterStatus('COMPLETED')">
+                  Concluídas <span id="count-filter-completed" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="NEEDS_REVIEW" onclick="setFilterStatus('NEEDS_REVIEW')">
+                  Revisão <span id="count-filter-review" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="FAILED" onclick="setFilterStatus('FAILED')">
+                  Erros <span id="count-filter-failed" class="filter-count">0</span>
+                </button>
+                <button class="btn btn-secondary filter-pill" data-status="SKIPPED" onclick="setFilterStatus('SKIPPED')">
+                  Descartadas <span id="count-filter-skipped" class="filter-count">0</span>
+                </button>
+              </div>
+
+              <div class="view-toggle-group" role="group" aria-label="Modo de visualização">
+                <button type="button" id="btn-results-view-table" class="btn btn-secondary active" onclick="setResultsViewMode('table')" title="Visualizar em tabela">
+                  Tabela
+                </button>
+                <button type="button" id="btn-results-view-grid" class="btn btn-secondary" onclick="setResultsViewMode('grid')" title="Visualizar em grade de cards">
+                  Grid
+                </button>
+              </div>
+
+              <button class="btn btn-secondary" onclick="exportResultsCSV()" title="Exportar dados visíveis para Excel / CSV">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Exportar CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Grade de Cards de Candidaturas -->
+          <div id="results-grid-view" class="jobs-grid" style="display:none; margin-bottom:0.5rem;"></div>
+
+          <!-- Tabela de Candidaturas -->
+          <div id="results-table-wrap" class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sortable" onclick="sortTable('company')">
+                    Empresa & Cargo <span id="sort-company" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('status')">
+                    Status <span id="sort-status" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('resume_used')">
+                    Currículo Enviado <span id="sort-resume_used" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('duration_s')">
+                    Duração <span id="sort-duration_s" class="sort-icon">↕</span>
+                  </th>
+                  <th class="sortable" onclick="sortTable('tokens_used')">
+                    Tokens <span id="sort-tokens_used" class="sort-icon">↕</span>
+                  </th>
+                  <th>Diagnóstico do Pipeline</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="results-table-body">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                    Carregando registros do arquivo results.jsonl...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ABA 3: CONFIGURAÇÕES & CREDENCIAIS
+           =================================================================== -->
+      <section id="tab-config" class="tab-pane">
+        <form onsubmit="saveSettings(event)">
+          <!-- Linha 1: LLM e Sessão -->
+          <div class="form-row">
+            <!-- Card 1: Chaves de API & Motor LLM -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+                  Chaves de API & Motor LLM
+                </div>
+                <div id="llm-mode-badge" class="badge badge-neutral">BYOK (Gratuito)</div>
+              </div>
+
+              <!-- Seletor de Modo: BYOK vs Conta Gerenciada -->
+              <div class="form-group">
+                <label class="form-label">Modo de Operação da IA</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                  <button type="button" id="btn-mode-byok" class="btn btn-primary" style="justify-content:center;" onclick="switchLlmMode('byok')">
+                    BYOK (Grátis • Sua Chave)
+                  </button>
+                  <button type="button" id="btn-mode-managed" class="btn btn-secondary" style="justify-content:center;" onclick="switchLlmMode('managed')">
+                    Conta Gerenciada (Sem Chave)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Painel Modo Gerenciado (Supabase Proxy + Barra de Consumo) -->
+              <div id="managed-cloud-panel" style="display:none; margin-bottom:1rem;">
+                <!-- Barra de Consumo Estilo Claude/ChatGPT -->
+                <div id="cloud-quota-card" style="padding:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle); background:var(--bg-elevated, rgba(255,255,255,0.03)); margin-bottom:0.85rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+                    <span style="font-size:0.8rem; font-weight:600;">Consumo do Ciclo de IA</span>
+                    <div style="display:flex; align-items:center; gap:0.4rem;">
+                      <span id="cloud-plan-badge" class="badge badge-neutral">Plano Free</span>
+                      <span id="cloud-status-badge" class="badge badge-neutral">Desconectado</span>
+                    </div>
+                  </div>
+                  <div style="width:100%; height:10px; border-radius:999px; background:var(--bg-input, rgba(255,255,255,0.08)); overflow:hidden;">
+                    <div id="cloud-quota-bar" style="width:0%; height:100%; border-radius:999px; background:var(--mint); transition:width 0.35s ease, background 0.25s ease;"></div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-muted); margin-top:0.45rem;">
+                    <span><strong id="cloud-quota-pct" style="color:var(--text-primary);">0%</strong> do ciclo usado</span>
+                    <span id="cloud-quota-reset">Renova em —</span>
+                  </div>
+                  <div id="cloud-quota-alert" style="display:none; margin-top:0.55rem; padding:0.5rem 0.65rem; border-radius:var(--radius-sm); font-size:0.75rem; background:rgba(239,68,68,0.12); color:var(--crimson); border:1px solid rgba(239,68,68,0.28);"></div>
+                </div>
+
+                <!-- Modelos Rápidos Permitidos -->
+                <div class="form-group">
+                  <label class="form-label">Modelo Rápido Gerenciado</label>
+                  <select id="cfg-managed-model" class="form-control" onchange="selectManagedModel(this.value)">
+                    <option value="deepseek/deepseek-v4.1-flash">DeepSeek V4.1 Flash (Padrão • US$ 0,05 / US$ 0,20)</option>
+                    <option value="openai/gpt-6-luna">OpenAI GPT-6 Luna (Novo • US$ 0,10 / US$ 0,50)</option>
+                    <option value="anthropic/claude-haiku-5.5">Claude Haiku 5.5 (Novo • US$ 0,10 / US$ 0,50)</option>
+                    <option value="google/gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (US$ 0,30 / US$ 2,50)</option>
+                    <option value="google/gemini-3.8-flash">Gemini 3.8 Flash (Mais capaz • US$ 0,82 / US$ 4,12)</option>
+                    <option value="qwen/qwen3.8-flash">Qwen 3.8 Flash (US$ 0,15 / US$ 0,47)</option>
+                    <option value="qwen/qwen3.7-flash">Qwen 3.7 Flash (Ultra-barato • US$ 0,03 / US$ 0,13)</option>
+                    <option value="minimax/minimax-m3.1-flash">MiniMax M3.1 Flash (Novo • US$ 0,075 / US$ 0,30)</option>
+                    <option value="minimax/minimax-m3">MiniMax M3 (US$ 0,30 / US$ 1,20)</option>
+                  </select>
+                </div>
+
+                <!-- Conta Conectada / Login -->
+                <div id="cloud-auth-logged-out" style="padding:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                  <div class="form-row" style="grid-template-columns:1fr 1fr; gap:0.5rem;">
+                    <div class="form-group" style="margin-bottom:0.5rem;">
+                      <label class="form-label">E-mail</label>
+                      <input id="cloud-email" type="email" class="form-control" placeholder="voce@email.com" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0.5rem;">
+                      <label class="form-label">Senha</label>
+                      <input id="cloud-password" type="password" class="form-control" placeholder="Mínimo 6 caracteres" />
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button type="button" id="btn-cloud-login" class="btn btn-primary" onclick="cloudLogin()">Entrar</button>
+                    <button type="button" id="btn-cloud-signup" class="btn btn-secondary" onclick="cloudSignup()">Criar Conta</button>
+                  </div>
+                  <div id="cloud-auth-feedback" style="display:none; font-size:0.75rem; margin-top:0.5rem;"></div>
+                </div>
+
+                <div id="cloud-auth-logged-in" style="display:none; padding:0.75rem 0.85rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle); justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <div style="font-size:0.8rem;">
+                    <span style="color:var(--text-muted);">Conectado como</span>
+                    <strong id="cloud-user-email" style="margin-left:0.25rem;">—</strong>
+                  </div>
+                  <div style="display:flex; gap:0.45rem;">
+                    <button type="button" id="btn-cloud-refresh" class="btn btn-secondary" onclick="refreshCloudQuota()">Atualizar Cota</button>
+                    <button type="button" id="btn-cloud-logout" class="btn btn-danger" onclick="cloudLogout()">Sair</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Painel Modo BYOK (Chave Própria Gratuita) -->
+              <div id="byok-fields">
+                <div class="form-group">
+                  <label class="form-label">Chave Secreta da API (Gemini ou OpenAI)</label>
+                  <div class="input-with-action">
+                    <input
+                      id="cfg-api-key"
+                      type="password"
+                      class="form-control"
+                      placeholder="Cole sua chave (ex: AIza... ou sk-...)"
+                      oninput="markConfigDirty()"
+                    />
+                    <button type="button" class="btn btn-secondary" onclick="togglePasswordVisibility('cfg-api-key')" title="Revelar segredo">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <button id="btn-test-key" type="button" class="btn btn-secondary" onclick="testApiKey()">
+                      Testar Conexão
+                    </button>
+                  </div>
+                  <div id="test-key-result" style="display:none; font-family:var(--font-mono); font-size:0.75rem; margin-top:0.4rem;"></div>
+                  <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.35rem;">
+                    Chave gratuita no Google AI Studio: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--mint); text-decoration:none;">aistudio.google.com</a>
+                  </p>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Presets Rápidos de Modelos</label>
+                  <select id="cfg-model-preset" class="form-control" onchange="applyModelPreset(this.value)">
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recomendado Google — Rápido e Econômico)</option>
+                    <option value="deepseek/deepseek-v4.1-flash">OpenRouter: DeepSeek V4.1 Flash</option>
+                    <option value="minimax/minimax-m3.1-flash">OpenRouter: MiniMax M3.1 Flash</option>
+                    <option value="openai/gpt-6-luna">OpenRouter: OpenAI GPT-6 Luna</option>
+                    <option value="gpt-4o-mini">OpenAI GPT-4o-mini (Direto)</option>
+                    <option value="custom">Outro / Modelo Personalizado</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Modelo de Linguagem (LLM_MODEL)</label>
+                  <input id="cfg-model" type="text" class="form-control" placeholder="gemini-2.5-flash" oninput="markConfigDirty()" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">URL Base da API (LLM_BASE_URL)</label>
+                  <input id="cfg-base-url" type="text" class="form-control" placeholder="https://generativelanguage.googleapis.com/v1beta/openai/" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Timeout (s)</label>
+                  <input id="cfg-llm-timeout" type="number" min="5" max="300" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Retries</label>
+                  <input id="cfg-llm-retries" type="number" min="1" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Max Chars</label>
+                  <input id="cfg-llm-max-input" type="number" min="1000" max="100000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top:0.4rem;">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-no-llm" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Desativar LLM (NO_LLM):</strong> Operar somente com Heurísticas e Laya</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Card 2: Cookies & Sessão de Contas -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 8h.01"/><path d="M12 12h.01"/><path d="M16 8h.01"/><path d="M12 16h.01"/></svg>
+                  Sessão Camoufox & Cookies de Contas
+                </div>
+                <div id="cookies-status-badge" class="badge badge-neutral">Sincronizando...</div>
+              </div>
+
+              <p id="cookies-details-text" style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.85rem;">
+                Cookies mantêm suas credenciais do Indeed, Gupy e LinkedIn ativas para suprimir desafios Cloudflare Turnstile.
+              </p>
+
+              <div id="cookies-portals-list" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.15rem;"></div>
+
+              <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                  <button type="button" class="btn btn-secondary" style="justify-content:center;" onclick="connectPortal('linkedin')">
+                    <strong>Conectar com LinkedIn</strong>
+                  </button>
+                  <button type="button" class="btn btn-secondary" style="justify-content:center;" onclick="connectPortal('gupy')">
+                    <strong>Conectar com Gupy</strong>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-secondary" style="justify-content:flex-start;" onclick="triggerVisualLogin()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  <strong>Abrir Navegador para Login</strong> (1-Clique Visual)
+                </button>
+                <button type="button" class="btn btn-secondary" style="justify-content:flex-start;" onclick="openPasteCookiesModal()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+                  <strong>Importar Cookies JSON</strong> (Extensões)
+                </button>
+                <button type="button" class="btn btn-danger" style="justify-content:flex-start;" onclick="clearSavedCookies()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  <strong>Limpar Sessão Salva</strong>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha 2: Planilha e Diretrizes de Execução -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <!-- Card 3: Fontes de Dados (Supabase, Fila Local & Planilha Opcional) -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                  Fontes de Dados (Supabase, Fila Local &amp; Planilha)
+                </div>
+                <span id="cfg-supabase-sync-badge" class="badge badge-neutral">Supabase Desconectado</span>
+              </div>
+
+              <div style="padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle); background:var(--bg-elevated, rgba(255,255,255,0.03)); margin-bottom:0.85rem;">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer; margin-bottom:0.55rem;">
+                  <input id="cfg-supabase-sync" type="checkbox" checked onchange="markConfigDirty()" />
+                  <span><strong>Sincronização Direta Supabase (SUPABASE_SYNC_ENABLED):</strong> Enviar vagas do Radar e gravar candidaturas em <code>job_applications</code></span>
+                </label>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
+                  <span style="font-size:0.72rem; color:var(--text-muted);">Usa a sessão autenticada no Card 1 (mesmo no modo BYOK).</span>
+                  <button type="button" id="btn-sync-supabase-jobs" class="btn btn-secondary" onclick="syncSupabaseJobsNow()">
+                    Sincronizar Agora com Supabase
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Fila Local do Radar (DISCOVERED_JOBS_FILE)</label>
+                <input id="cfg-discovered-jobs-file" type="text" class="form-control" placeholder="./cache/discovered_jobs.json" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Planilha Google Sheets (GOOGLE_SHEET_URL — Opcional)</label>
+                <div class="input-with-action">
+                  <input
+                    id="cfg-sheet-url"
+                    type="text"
+                    class="form-control"
+                    placeholder="Opcional: deixe vazio para operar apenas com Radar + Supabase"
+                    oninput="markConfigDirty()"
+                  />
+                  <button type="button" class="btn btn-secondary" onclick="openCurrentSheet()" title="Abrir planilha no Google Sheets">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Pasta Google Drive (DRIVE_FOLDER_ID — use <code>none</code> p/ Local/ReportLab)</label>
+                <input id="cfg-drive-folder" type="text" class="form-control" placeholder="none ou ID da pasta do Drive" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Diretório Local de Currículos (CACHE_DIR)</label>
+                <input id="cfg-cache-dir" type="text" class="form-control" placeholder="./cache/resumes" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">OAuth Client File</label>
+                  <input id="cfg-google-oauth-file" type="text" class="form-control" placeholder="./client_secret.json" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Service Account File</label>
+                  <input id="cfg-google-sa-file" type="text" class="form-control" placeholder="./service_account.json" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Google Token File</label>
+                <input id="cfg-google-token-file" type="text" class="form-control" placeholder="./token.json" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-blank-status" type="checkbox" onchange="markConfigDirty()" />
+                  <span>Tratar registros vazios na planilha como "A Fazer" (INCLUDE_BLANK_STATUS)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Card 4: Execução, Concorrência & Navegador -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                  Diretrizes de Execução & Navegador
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Navegadores Simultâneos (MAX_CONCURRENCY)</label>
+                <input id="cfg-concurrency" type="number" min="1" max="10" class="form-control" oninput="markConfigDirty()" />
+                <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">
+                  Recomendado para estabilidade: 2 a 3 instâncias.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-dry-run" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Modo Simulação (DRY_RUN):</strong> Preenche sem clicar em submeter (Protegido)</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-autonomous" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Modo Autônomo (AUTONOMOUS_MODE):</strong> Resolve campos sem aguardar revisão</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-camoufox" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Motor Camoufox (USE_CAMOUFOX):</strong> Emulação biométrica anti-bot</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-headless" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Modo Headless (HEADLESS):</strong> Ocultar janelas do navegador</span>
+                </label>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Storage State</label>
+                  <input id="cfg-storage-state-path" type="text" class="form-control" placeholder="./cache/storage_state.json" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Pasta Screenshots</label>
+                  <input id="cfg-screenshot-dir" type="text" class="form-control" placeholder="./artifacts/screenshots" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Arquivo Resultados</label>
+                  <input id="cfg-results-file" type="text" class="form-control" placeholder="./artifacts/results.jsonl" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Planilha Saída</label>
+                  <input id="cfg-sheet-result-file" type="text" class="form-control" placeholder="./artifacts/planilha_atualizada.xlsx" oninput="markConfigDirty()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha 3: Timeouts & Fit Gate -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <!-- Card 5: Timeouts, Retentativas & Rede -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Timeouts, Retentativas & Rede
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Timeout Tarefa (s)</label>
+                  <input id="cfg-task-timeout" type="number" min="10" max="600" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nav Timeout (ms)</label>
+                  <input id="cfg-nav-timeout" type="number" min="1000" max="120000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ação Timeout (ms)</label>
+                  <input id="cfg-action-timeout" type="number" min="500" max="60000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Máx Retentativas (MAX_RETRIES)</label>
+                  <input id="cfg-max-retries" type="number" min="0" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Backoff Base (s)</label>
+                  <input id="cfg-backoff-base" type="number" step="0.1" min="0.1" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Padrões de URLs Bloqueadas (BLOCKED_URL_PATTERNS JSON)</label>
+                <input id="cfg-blocked-patterns" type="text" class="form-control" style="font-family:var(--font-mono); font-size:0.75rem;" placeholder='["*google-analytics.com*", "*hotjar.com*"]' oninput="markConfigDirty()" />
+              </div>
+            </div>
+
+            <!-- Card 6: Fit Gate, Currículo Sob Medida & Radar de Portais -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+                  Fit Gate, Currículo PDF &amp; Radar de Vagas
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Score Mínimo (MIN_FIT_SCORE)</label>
+                  <input id="cfg-min-fit-score" type="number" min="0" max="100" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Match Currículo (0.1 - 1.0)</label>
+                  <input id="cfg-resume-match-threshold" type="number" step="0.05" min="0.1" max="1.0" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-fit-gate-enabled" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Ativar Fit Gate (FIT_GATE_ENABLED):</strong> Corte automático abaixo do score mínimo</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-tailor-resume-per-job" type="checkbox" checked onchange="markConfigDirty()" />
+                  <span><strong>Currículo Sob Medida PDF (TAILOR_RESUME_PER_JOB):</strong> Gerar PDF ATS adaptado por vaga com ReportLab</span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Pasta de Currículos Gerados (GENERATED_RESUMES_DIR)</label>
+                <input id="cfg-generated-resumes-dir" type="text" class="form-control" placeholder="./cache/resumes/generated" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Localidade LinkedIn (LINKEDIN_SEARCH_LOCATION)</label>
+                  <input id="cfg-linkedin-location" type="text" class="form-control" placeholder="Brasil" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Limite Diário LinkedIn (LINKEDIN_DAILY_LIMIT)</label>
+                  <input id="cfg-linkedin-daily-limit" type="number" min="1" max="100" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Boards Greenhouse (TARGET_GREENHOUSE_BOARDS — slugs separados por vírgula)</label>
+                <input id="cfg-gh-boards" type="text" class="form-control" placeholder="ex: nubank, stripe, gitlab" oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-row" style="grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Boards Lever (TARGET_LEVER_BOARDS)</label>
+                  <input id="cfg-lever-boards" type="text" class="form-control" placeholder="ex: netflix, spotify" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Boards Ashby (TARGET_ASHBY_BOARDS)</label>
+                  <input id="cfg-ashby-boards" type="text" class="form-control" placeholder="ex: openai, linear" oninput="markConfigDirty()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha 4: Motor de Decisão Calibrada (Laya) -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <div class="card" style="grid-column: 1 / -1;">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Motor de Decisão Calibrada (Laya Sidecar & Regras Determinísticas)
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Backend de Decisão</label>
+                  <select id="cfg-decision-backend" class="form-control" onchange="markConfigDirty()">
+                    <option value="laya">Laya Sidecar (Probabilístico Calibrado)</option>
+                    <option value="rules">Rules (Regras Determinísticas Heurísticas)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">URL do Laya (LAYA_URL)</label>
+                  <input id="cfg-laya-url" type="text" class="form-control" placeholder="http://127.0.0.1:8787" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Timeout Laya (s)</label>
+                  <input id="cfg-laya-timeout" type="number" step="0.5" min="0.5" max="60" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fator CPU Timeout</label>
+                  <input id="cfg-laya-cpu-factor" type="number" step="0.5" min="1" max="20" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Falhas Circuit Breaker</label>
+                  <input id="cfg-laya-max-failures" type="number" min="1" max="10" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cooldown Breaker (s)</label>
+                  <input id="cfg-laya-cooldown" type="number" min="5" max="300" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Limiar Sim (Yes Th)</label>
+                  <input id="cfg-laya-yes-th" type="number" step="0.05" min="0.5" max="0.99" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Limiar Não (No Th)</label>
+                  <input id="cfg-laya-no-th" type="number" step="0.05" min="0.01" max="0.5" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Margem Mínima</label>
+                  <input id="cfg-laya-min-margin" type="number" step="0.01" min="0.01" max="0.5" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Max Chars Estado</label>
+                  <input id="cfg-laya-max-chars" type="number" min="300" max="10000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Plan Acima de (chars)</label>
+                  <input id="cfg-laya-plan-above" type="number" min="200" max="5000" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Arquivo Auditoria Decisões</label>
+                  <input id="cfg-decision-audit-file" type="text" class="form-control" placeholder="./artifacts/decisions.jsonl" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Modos dos Pontos de Decisão DP1-DP6 (LAYA_DP_MODES JSON)</label>
+                <input id="cfg-laya-dp-modes" type="text" class="form-control" style="font-family:var(--font-mono); font-size:0.75rem;" placeholder='{"DP1":"shadow","DP2":"shadow","DP3":"active","DP4":"active","DP5":"shadow","DP6":"active"}' oninput="markConfigDirty()" />
+              </div>
+
+              <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:0.75rem;">
+                <div class="form-group">
+                  <label class="form-label">Arquivo Avaliação Laya</label>
+                  <input id="cfg-laya-eval-file" type="text" class="form-control" placeholder="./artifacts/laya_eval.json" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Validade Eval (dias)</label>
+                  <input id="cfg-laya-eval-max-days" type="number" min="1" max="90" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mínimo Exemplos Eval</label>
+                  <input id="cfg-eval-min-examples" type="number" min="5" max="200" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Margem Eval</label>
+                  <input id="cfg-eval-margin" type="number" step="0.01" min="0.01" max="0.5" class="form-control" oninput="markConfigDirty()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cobertura Mín Eval</label>
+                  <input id="cfg-eval-min-coverage" type="number" step="0.05" min="0.1" max="1.0" class="form-control" oninput="markConfigDirty()" />
+                </div>
+              </div>
+
+              <div class="form-group" style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.4rem;">
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-laya-order-swap" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Swap de Ordem (LAYA_ORDER_SWAP):</strong> Mitigar viés de ordem executando duas passadas invertidas</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-laya-req-eval" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Exigir Avaliação (LAYA_REQUIRE_EVAL_FOR_ACTIVE):</strong> Fallback para shadow se eval estiver vencido</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-laya-navigator" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Navegador Web Genérico (LAYA_WEB_NAVIGATOR_ENABLED):</strong> Permitir que a Laya opere portais/ATS desconhecidos</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.8rem; cursor:pointer;">
+                  <input id="cfg-laya-visual" type="checkbox" onchange="markConfigDirty()" />
+                  <span><strong>Visor Neural Ao Vivo (LAYA_VISUAL_WATCH):</strong> Destacar botões/campos com HUD e transmitir no Dashboard</span>
+                </label>
+              </div>
+              <div class="form-group" style="max-width:280px; margin-top:0.65rem;">
+                <label for="cfg-laya-visual-delay">Atraso Visual entre Ações (ms)</label>
+                <input id="cfg-laya-visual-delay" type="number" min="0" max="5000" step="50" onchange="markConfigDirty()" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha 5: Editor Direto do Arquivo .env (Modo Avançado) -->
+          <div class="form-row" style="margin-top: 1.15rem;">
+            <div class="card" style="grid-column: 1 / -1;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                    Editor Direto do Arquivo .env (Modo Avançado / Todas as Variáveis)
+                  </div>
+                  <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
+                    Edite ou adicione qualquer variável de ambiente diretamente no arquivo. Alterações gravadas aqui atualizam imediatamente o processo e todos os formulários.
+                  </p>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="saveRawEnvDirect()" style="font-size:0.78rem;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
+                  Salvar Texto do .env
+                </button>
+              </div>
+
+              <div class="form-group" style="margin-bottom:0;">
+                <textarea
+                  id="cfg-raw-env"
+                  class="form-control"
+                  rows="14"
+                  style="font-family:var(--font-mono); font-size:0.78rem; line-height:1.45; white-space:pre; resize:vertical; background:var(--bg-input);"
+                  placeholder="# Conteúdo do seu arquivo .env..."
+                  oninput="markConfigDirty()"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botão Salvar Geral no Rodapé -->
+          <div style="margin-top: 1.35rem; display:flex; justify-content:flex-end; align-items:center;">
+            <div id="unsaved-badge" style="display:none; font-size:0.75rem; margin-right:0.85rem; color:var(--amber); align-items:center;">
+              <span class="unsaved-dot"></span> Alterações não gravadas no .env
+            </div>
+            <button id="btn-save-settings" type="submit" class="btn btn-primary" style="padding:0.65rem 2rem; font-size:0.875rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Gravar Todas as Configurações no .env
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===================================================================
+           ABA 4: EVIDÊNCIAS & CAPTURAS DE TELA
+           =================================================================== -->
+      <section id="tab-screenshots" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                Galeria de Capturas de Tela (Evidências Visuais)
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted);">
+                Telas registradas no instante exato de paradas por CAPTCHA, formulário ou dúvida do robô.
+              </p>
+            </div>
+          </div>
+
+          <div id="gallery-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1.15rem;">
+            <!-- Renderizado dinamicamente -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ABA 5: DESIGN SYSTEM & BRAND TOKENS
+           =================================================================== -->
+      <section id="tab-design-system" class="tab-pane">
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+                Identidade Visual &amp; Design System (Telemetry Dark UI)
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted);">
+                Diretrizes canônicas de cores, tipografia, tokens e assets gráficos do ecossistema Candidata IA.
+              </p>
+            </div>
+          </div>
+
+          <!-- Banner de Apresentação da Marca -->
+          <div style="display:flex; gap:2rem; align-items:center; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:1.5rem;">
+            <div style="width:110px; height:110px; border-radius:var(--radius-md); border:1px solid rgba(0,242,157,0.3); background:#06080b; padding:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 24px var(--mint-glow);">
+              <img src="/static/assets/logo.svg" alt="Emblem" style="width:100%; height:100%;" />
+            </div>
+            <div>
+              <div style="display:flex; align-items:center; gap:0.6rem;">
+                <h2 style="font-size:1.4rem; font-weight:800; letter-spacing:-0.03em;">CANDIDATA // HARNESS</h2>
+                <span class="badge badge-success">v1.0.0</span>
+              </div>
+              <p style="font-size:0.85rem; color:var(--text-secondary); max-width:650px; margin-top:0.4rem;">
+                Sistema visual orientado a observabilidade e contraste elevado: superfícies em carbono escuro (Obsidian), destaque em Menta (#00F29D) para estados saudáveis e Ciano (#38BDF8) para métricas de inferência e telemetria SSE.
+              </p>
+            </div>
+          </div>
+
+          <!-- Paleta de Cores e Tokens -->
+          <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.85rem;">
+              PALETA DE CORES PRIMÁRIA
+            </h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
+              <div style="background:#06080b; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#06080b; border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-xs); margin-bottom:0.6rem;"></div>
+                <div style="font-weight:600; font-size:0.85rem;">Obsidian Void</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#06080B</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Fundo mestre sem reflexo</div>
+              </div>
+
+              <div style="background:#0c1017; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#0c1017; border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-xs); margin-bottom:0.6rem;"></div>
+                <div style="font-weight:600; font-size:0.85rem;">Carbon Surface</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#0C1017</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Superfície dos cartões</div>
+              </div>
+
+              <div style="background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#00f29d; border-radius:var(--radius-xs); margin-bottom:0.6rem; box-shadow:0 0 12px var(--mint-glow);"></div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--mint);">Quantum Mint</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#00F29D</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Identidade e sucesso</div>
+              </div>
+
+              <div style="background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#38bdf8; border-radius:var(--radius-xs); margin-bottom:0.6rem; box-shadow:0 0 12px var(--cyan-glow);"></div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--cyan);">Cyber Cyan</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#38BDF8</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Tokens & Cognição LLM</div>
+              </div>
+
+              <div style="background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem;">
+                <div style="height:40px; background:#f59e0b; border-radius:var(--radius-xs); margin-bottom:0.6rem; box-shadow:0 0 12px var(--amber-glow);"></div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--amber);">Solar Amber</div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted);">#F59E0B</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.2rem;">Revisão Humana / Atenção</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matriz de Badges & Componentes -->
+          <div>
+            <h3 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.85rem;">
+              SISTEMA DE BADGES E PÍLULAS DE STATUS
+            </h3>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+              <span class="badge badge-success"><span class="badge-dot"></span> CANDIDATURA ENVIADA</span>
+              <span class="badge badge-info"><span class="badge-dot"></span> GUPY RECONHECIDO</span>
+              <span class="badge badge-warning"><span class="badge-dot"></span> REVISÃO HUMANA (CAPTCHA)</span>
+              <span class="badge badge-danger"><span class="badge-dot"></span> FALHA DE REDE</span>
+              <span class="badge badge-neutral"><span class="badge-dot"></span> STATUS FILTRADO</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: DISPARAR AUTOMAÇÃO
+       ===================================================================== -->
+  <div id="modal-run" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          Iniciar Protocolo de Execução
+        </h3>
+        <button class="modal-close" onclick="closeRunModal()">&times;</button>
+      </div>
+
+      <p style="font-size:0.825rem; color:var(--text-secondary); margin-bottom:1.15rem;">
+        Defina os parâmetros de execução do lote sem necessidade de comandos de terminal:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Limite de vagas a processar:</label>
+        <select id="run-opt-limit" class="form-control">
+          <option value="5">Apenas 5 vagas (Amostra rápida)</option>
+          <option value="10">10 vagas</option>
+          <option value="25">25 vagas</option>
+          <option value="" selected>Todas as vagas pendentes na planilha</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-dryrun" type="checkbox" checked />
+          <span><strong>Modo Simulação (Dry-Run):</strong> Preenche o formulário mas não clica em submeter</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-retry-failed" type="checkbox" />
+          <span>Incluir vagas marcadas como "Falhou" para nova tentativa</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-retry-review" type="checkbox" />
+          <span>Incluir vagas marcadas como "Revisar"</span>
+        </label>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-laya-navigator" type="checkbox" />
+          <span>Usar Navegador Web Genérico da Laya em sites sem ATS conhecido</span>
+        </label>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-laya-visual" type="checkbox" />
+          <span>Ativar Visor Neural Ao Vivo (destaca cliques, seleções e escala para Dashboard)</span>
+        </label>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.825rem; cursor:pointer;">
+          <input id="run-opt-headed" type="checkbox" />
+          <span>Abrir janela visível do navegador (desmarque para rodar apenas no Dashboard headless)</span>
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeRunModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="executeRun()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          Disparar Missão Agora
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: SELEÇÃO DE PORTAL PARA LOGIN VISUAL
+       ===================================================================== -->
+  <div id="modal-login-choice" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Login Visual em Portais de Vagas
+        </h3>
+        <button class="modal-close" onclick="closeLoginChoiceModal()">&times;</button>
+      </div>
+      <p style="font-size:0.825rem; color:var(--text-secondary); margin-bottom:0.85rem;">
+        Selecione o portal desejado. Uma janela de navegador abrirá para você fazer login manualmente:
+      </p>
+      <div class="portal-buttons-grid">
+        <button type="button" class="portal-choice-btn" onclick="startPortalLogin('https://br.indeed.com')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          Indeed Brasil
+        </button>
+        <button type="button" class="portal-choice-btn" onclick="startPortalLogin('https://auth.gupy.io')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+          Gupy Portal
+        </button>
+        <button type="button" class="portal-choice-btn" onclick="startPortalLogin('https://www.linkedin.com/login')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8v8M12 11v5M8 11v5M8 8v.01"/></svg>
+          LinkedIn
+        </button>
+      </div>
+      <div class="form-group" style="margin-top:1rem;">
+        <label class="form-label">Ou informe uma URL personalizada:</label>
+        <div class="input-with-action">
+          <input id="input-custom-login-url" type="text" class="form-control" placeholder="https://..." value="https://br.indeed.com" />
+          <button type="button" class="btn btn-secondary" onclick="startPortalLogin(document.getElementById('input-custom-login-url').value)">
+            Abrir URL
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeLoginChoiceModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: DETALHES COMPLETOS DA VAGA (AUDITORIA)
+       ===================================================================== -->
+  <div id="modal-job-details" class="modal-overlay" onclick="closeJobDetailsModal()">
+    <div class="modal-box large" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="job-detail-title" class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          Auditoria Detalhada da Vaga
+        </h3>
+        <button class="modal-close" onclick="closeJobDetailsModal()">&times;</button>
+      </div>
+      <div id="job-detail-content"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeJobDetailsModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: COLAR COOKIES JSON
+       ===================================================================== -->
+  <div id="modal-paste-cookies" class="modal-overlay">
+    <div class="modal-box large">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+          Importação de Sessão & Cookies (JSON)
+        </h3>
+        <button class="modal-close" onclick="closePasteCookiesModal()">&times;</button>
+      </div>
+
+      <p style="font-size:0.825rem; color:var(--text-secondary); margin-bottom:0.85rem;">
+        Cole abaixo a exportação de cookies no formato Playwright (storage_state) ou gerada por extensões (EditThisCookie):
+      </p>
+
+      <textarea
+        id="txt-cookies-json"
+        class="form-control"
+        rows="10"
+        style="font-family:var(--font-mono); font-size:0.78rem;"
+        placeholder='[ { "name": "session", "value": "...", "domain": ".indeed.com" } ]'
+      ></textarea>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePasteCookiesModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitPastedCookies()">
+          Gravar Cookies no Disco
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: VISUALIZAR SCREENSHOT
+       ===================================================================== -->
+  <div id="screenshot-modal" class="modal-overlay" onclick="closeScreenshotModal()">
+    <div class="modal-box large" style="max-width:1050px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="screenshot-title" class="modal-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/></svg>
+          Evidência Capturada pelo Navegador
+        </h3>
+        <button class="modal-close" onclick="closeScreenshotModal()">&times;</button>
+      </div>
+      <div style="max-height:72vh; overflow-y:auto; text-align:center;">
+        <img id="screenshot-img" src="" alt="Screenshot" style="max-width:100%; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);" />
+      </div>
+      <div class="modal-footer">
+        <a id="btn-download-screenshot" href="#" download="evidencia.png" class="btn btn-secondary" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Baixar Imagem
+        </a>
+        <a id="btn-open-screenshot-tab" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+          Abrir em Nova Aba
+        </a>
+        <button class="btn btn-primary" onclick="closeScreenshotModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
